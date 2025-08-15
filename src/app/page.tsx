@@ -1,7 +1,6 @@
-import Image from "next/image";
 import Header from "@/components/header";
-import { DataTable } from "./data-table";
-import { columns, DataTableRow } from "./columns"
+import { DataTable } from "@/components/data-table";
+import { columns, DataTableRow } from "@/components/fines-columns";
 
 
 async function getData(): Promise<DataTableRow[]> {
