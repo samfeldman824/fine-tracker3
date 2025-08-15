@@ -1,8 +1,6 @@
 import Header from "@/components/header";
 import { DataTable } from "@/components/data-table";
 import { columns, DataTableRow } from "@/components/fines-columns";
-import { AddFineForm } from "@/components/add-fine-form";
-import { AddCreditForm } from "@/components/add-credit-form";
 import { FormsContainer } from "@/components/forms-container";
 
 
@@ -41,8 +39,6 @@ export default function Home() {
      <Header username={"Jit Bag"} role="Admin" />
     <DataTable columns={columns} data={data} /> 
     <FormsContainer />
-    {/* <AddFineForm /> */}
-    {/* <AddCreditForm /> */}
     </div>
   );
 }
