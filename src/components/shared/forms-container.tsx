@@ -1,5 +1,5 @@
-import { AddFineForm } from "./add-fine-form";
-import { AddCreditForm } from "./add-credit-form";
+import { AddFineForm } from "@/components/features/fines";
+import { AddCreditForm } from "@/components/features/credits";
 
 export function FormsContainer() {
   return (
