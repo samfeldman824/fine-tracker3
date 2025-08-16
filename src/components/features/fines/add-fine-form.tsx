@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
-import { UserSelect } from "@/types/models";
+import { UserSelect, FineInsert } from "@/types/models";
 
 async function getUsers(): Promise<UserSelect[]> {
   const supabase = createClient();
@@ -23,9 +23,60 @@ async function getUsers(): Promise<UserSelect[]> {
   return data || [];
 }
 
+async function addFine(fine: FineInsert) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from('fines')
+    .insert(fine);
+  
+    if (error) {
+      console.error('Error pushing fines', error);
+      return { data: null, error: error.message };
+    }
+  
+    return {data, error}
+
+  
+  
+}
+
+type FineFormValues = {
+  offenderId: string | null;
+  description: string;
+  amount: number;
+};
+
+export function validateFineForm(values: FineFormValues): { valid: boolean; errors: Record<string, string> } {
+  const errors: Record<string, string> = {};
+
+  if (!values.offenderId || values.offenderId.trim() === "") {
+    errors.offenderId = "Offender is required.";
+  }
+
+  if (!values.description || values.description.trim() === "") {
+    errors.description = "Description is required.";
+  }
+
+  if (values.amount <= 0) {
+    errors.amount = "Amount must be greater than zero.";
+  }
+
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+
+
+
 export function AddFineForm() {
   const [users, setUsers] = useState<UserSelect[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUser, setSelectedUser] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [amount, setAmount] = useState<number>(0);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -52,7 +103,7 @@ export function AddFineForm() {
       <div className="space-y-4">
         <div>
           <label className="block text-[#3b2a22] font-medium mb-2">Offender</label>
-          <Select>
+          <Select value={selectedUser || ""} onValueChange={(value: string) => setSelectedUser(value)}>
             <SelectTrigger className="border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41]">
               <SelectValue placeholder={loading ? "Loading users..." : "Select offender"} />
             </SelectTrigger>
@@ -75,18 +126,45 @@ export function AddFineForm() {
           <Input
             placeholder="Enter violation description"
             className="border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41] placeholder:text-gray-400"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </div>
         <div>
           <label className="block text-[#3b2a22] font-medium mb-2">Amount ($)</label>
           <Input
             type="number"
-            defaultValue="0"
+            placeholder="Enter amount"
             className="border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41] placeholder:text-gray-400"
+            value={amount.toString()}
+            onChange={(e) => setAmount(Number(e.target.value.toString()))}
           />
         </div>
         <div className="flex justify-end">
-          <Button className="bg-[#7d6c64] hover:bg-[#6b4a41] text-white font-semibold px-6 py-2 shadow">
+          <Button
+            className="bg-[#7d6c64] hover:bg-[#6b4a41] text-white font-semibold px-6 py-2 shadow"
+                        onClick={() => {
+              const validation = validateFineForm({
+                offenderId: selectedUser,
+                description,
+                amount
+              });
+              
+              if (!validation.valid) {
+                alert(Object.values(validation.errors).join('\n'));
+                return;
+              }
+              addFine({
+                amount: amount,
+                created_at: new Date().toISOString(),
+                date: new Date().toISOString(),
+                description: description,
+                offender_id: selectedUser,
+                proposed_by: "68accc08-996e-4f13-ae69-f521fa2387f6",
+                replies: 0,
+              });
+            }}
+          >
             Add Fine
           </Button>
         </div>
