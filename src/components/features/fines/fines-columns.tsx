@@ -3,19 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown } from "lucide-react"
-
-
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
-export type DataTableRow = {
-  id: string
-  date: string | Date // Date field - can be string or Date object
-  offender: string
-  description: string
-  amount: number
-  proposedBy: string
-  replies: number | string // Replies field - could be count or string
-}
+import type { DataTableRow } from "@/types/common"
 
 export const columns: ColumnDef<DataTableRow>[] = [
   {

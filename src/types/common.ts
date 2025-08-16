@@ -50,3 +50,14 @@ export type TableColumn<T> = {
   sortable?: boolean;
   filterable?: boolean;
 };
+
+// Data table row type for fines
+export type DataTableRow = {
+  id: string;
+  date: string | Date; // Date field - can be string or Date object
+  offender: string;
+  description: string;
+  amount: number;
+  proposedBy: string;
+  replies: number | string; // Replies field - could be count or string
+};

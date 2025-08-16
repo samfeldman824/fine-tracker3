@@ -1,6 +1,7 @@
 import { Header } from "@/components/layout";
 import { DataTable } from "@/components/shared";
-import { columns, DataTableRow } from "@/components/features/fines";
+import { columns } from "@/components/features/fines";
+import type { DataTableRow } from "@/types/common";
 import { FormsContainer } from "@/components/shared";
 import { createClient } from "@/lib/supabase/server";
 import { FineWithUsersQuery } from "@/types/api";

@@ -1,7 +1,8 @@
 "use client";
 
 import { DataTable } from "@/components/shared";
-import { columns, DataTableRow } from "./fines-columns";
+import { columns } from "./fines-columns";
+import type { DataTableRow } from "@/types/common";
 import { Fine } from "@/types/models";
 
 interface FinesTableProps {
