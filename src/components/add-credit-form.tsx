@@ -5,16 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
+import { UserSelect } from "@/types/models";
 
-
-
-type User = {
-  id: string;
-  username: string;
-  name: string | null;
-};
-
-async function getUsers(): Promise<User[]> {
+async function getUsers(): Promise<UserSelect[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -32,7 +25,7 @@ async function getUsers(): Promise<User[]> {
 
 
 export function AddCreditForm() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserSelect[]>([]);
   const [loading, setLoading] = useState(true);
 
 

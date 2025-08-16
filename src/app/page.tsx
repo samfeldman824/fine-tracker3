@@ -3,18 +3,9 @@ import { DataTable } from "@/components/data-table";
 import { columns, DataTableRow } from "@/components/fines-columns";
 import { FormsContainer } from "@/components/forms-container";
 import { createClient } from "@/lib/supabase/server";
+import { FineWithUsersQuery } from "@/types/api";
 
 export const dynamic = "force-dynamic"; // ✅ ADD THIS
-
-type FineWithUsers = {
-  id: string;
-  date: string;
-  description: string;
-  amount: number;
-  replies: number;
-  offender: { name: string } | { name: string }[] | null;
-  proposer: { name: string } | { name: string }[] | null;
-};
 
 
 async function getFines(): Promise<DataTableRow[]> {
@@ -38,7 +29,7 @@ async function getFines(): Promise<DataTableRow[]> {
       return [];
     }
 
-    return (data ?? []).map((fine: FineWithUsers) => ({
+    return (data ?? []).map((fine: FineWithUsersQuery) => ({
       id: fine.id,
       date: fine.date,
       offender: Array.isArray(fine.offender) ? fine.offender[0]?.name || 'Unknown' : fine.offender?.name || 'Unknown',
