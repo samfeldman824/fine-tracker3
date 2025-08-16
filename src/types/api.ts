@@ -25,5 +25,5 @@ export type GetUsersResult = {
 // Supabase response types
 export type SupabaseResponse<T> = {
   data: T | null;
-  error: any;
+  error: string | null;
 };
