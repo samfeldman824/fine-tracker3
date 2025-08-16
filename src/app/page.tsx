@@ -54,12 +54,13 @@ async function getFines(): Promise<DataTableRow[]> {
 }
 export default async function Home() {
 
-  const data = await getFines()
+  // Getting all fines from Fine Table
+  const FinesData = await getFines()
 
   return (
     <div className="font-sans min-h-screen">
       <Header username={"Jit Bag"} role="Admin" />
-      <DataTable columns={columns} data={data} />
+      <DataTable columns={columns} data={FinesData} />
       <FormsContainer />
     </div>
   );
