@@ -2,43 +2,65 @@ import Header from "@/components/header";
 import { DataTable } from "@/components/data-table";
 import { columns, DataTableRow } from "@/components/fines-columns";
 import { FormsContainer } from "@/components/forms-container";
+import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic"; // ✅ ADD THIS
+
+type FineWithUsers = {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  replies: number;
+  offender: { name: string } | { name: string }[] | null;
+  proposer: { name: string } | { name: string }[] | null;
+};
 
 
-async function getData(): Promise<DataTableRow[]> {
-  // Fetch data from your API here.
-  return [
-    {
-      id: "1234",
-      date: "07/21/2025",
-      offender: "Jit Bag",
-      description: "Complete Jitter behavior",
-      amount: 10,
-      proposedBy: "Less jit bag",
-      replies: 0
+async function getFines(): Promise<DataTableRow[]> {
+  try {
+    const supabase = await createClient();
 
-    },
-    {
-      id: "1235",
-      date: "07/22/2025",
-      offender: "Jit Bag 2",
-      description: "Complete Jitter behavior",
-      amount: 2,
-      proposedBy: "Jit Bag",
-      replies: 1
+    const { data, error } = await supabase
+      .from('fines')
+      .select(`
+        id,
+        date,
+        description,
+        amount,
+        replies,
+        offender:users!fines_offender_id_fkey(name),
+        proposer:users!fines_proposed_by_fkey(name)
+      `);
 
+    if (error) {
+      console.error('Error fetching fines:', error);
+      return [];
     }
-  ]
+
+    return (data ?? []).map((fine: FineWithUsers) => ({
+      id: fine.id,
+      date: fine.date,
+      offender: Array.isArray(fine.offender) ? fine.offender[0]?.name || 'Unknown' : fine.offender?.name || 'Unknown',
+      description: fine.description,
+      amount: fine.amount,
+      proposedBy: Array.isArray(fine.proposer) ? fine.proposer[0]?.name || 'Unknown' : fine.proposer?.name || 'Unknown',
+      replies: fine.replies
+    }));
+  } catch (error) {
+    console.error('Failed to connect to database:', error);
+    return [];
+  }
 }
+export default async function Home() {
 
+  const data = await getFines()
 
-const data = await getData()
-
-export default function Home() {
   return (
     <div className="font-sans min-h-screen">
-     <Header username={"Jit Bag"} role="Admin" />
-    <DataTable columns={columns} data={data} /> 
-    <FormsContainer />
+      <Header username={"Jit Bag"} role="Admin" />
+      <DataTable columns={columns} data={data} />
+      <FormsContainer />
     </div>
   );
 }
