@@ -140,7 +140,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
           </label>
           <Input
             type="number"
-            placeholder={fineType === "Warning" ? "Not applicable for warnings" : "Enter amount"}
+            placeholder={fineType === "Warning" ? "" : "Enter amount"}
             className={`border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41] placeholder:text-gray-400 ${
               fineType === "Warning" 
                 ? "bg-gray-100 text-gray-500 cursor-not-allowed opacity-60" 
