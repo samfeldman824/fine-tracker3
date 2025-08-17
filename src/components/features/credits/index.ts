@@ -1,2 +1,2 @@
 // Credits feature components
-export { AddCreditForm } from "./add-credit-form";
+export { default as AddCreditForm } from "./add-credit-form";

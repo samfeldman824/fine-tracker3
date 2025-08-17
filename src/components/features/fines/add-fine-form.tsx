@@ -6,6 +6,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { UserSelect, FineInsert } from "@/types/models";
+import { FineFormValues } from "@/types/common";
 
 async function getUsers(): Promise<UserSelect[]> {
   const supabase = createClient();
@@ -31,21 +32,13 @@ async function addFine(fine: FineInsert) {
     .insert(fine);
   
     if (error) {
-      console.error('Error pushing fines', error);
+      console.error('Error pushing fine', error);
       return { data: null, error: error.message };
     }
   
     return {data, error}
 
-  
-  
 }
-
-type FineFormValues = {
-  offenderId: string | null;
-  description: string;
-  amount: number;
-};
 
 export function validateFineForm(values: FineFormValues): { valid: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {};

@@ -61,3 +61,17 @@ export type DataTableRow = {
   proposedBy: string;
   replies: number | string; // Replies field - could be count or string
 };
+
+// Form for adding fine
+export type FineFormValues = {
+  offenderId: string;
+  description: string;
+  amount: number;
+};
+
+// For for adding credit
+export type CreditFormValues = {
+  recipientId: string;
+  description: string;
+  amount: number;
+}
