@@ -41,7 +41,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 -ml-4 justify-start font-semibold"
         >
-          Subject
+          Player
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )

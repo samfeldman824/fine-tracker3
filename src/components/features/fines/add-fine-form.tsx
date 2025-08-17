@@ -95,10 +95,10 @@ export function AddFineForm() {
 
       <div className="space-y-4">
         <div>
-          <label className="block text-[#3b2a22] font-medium mb-2">Offender</label>
+          <label className="block text-[#3b2a22] font-medium mb-2">Player</label>
           <Select value={selectedUser || ""} onValueChange={(value: string) => setSelectedUser(value)}>
             <SelectTrigger className="border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41]">
-              <SelectValue placeholder={loading ? "Loading users..." : "Select offender"} />
+              <SelectValue placeholder={loading ? "Loading users..." : "Select player"} />
             </SelectTrigger>
             <SelectContent>
               {users.map((user) => (
@@ -117,7 +117,7 @@ export function AddFineForm() {
         <div>
           <label className="block text-[#3b2a22] font-medium mb-2">Description</label>
           <Input
-            placeholder="Enter violation description"
+            placeholder="Enter description"
             className="border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41] placeholder:text-gray-400"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
