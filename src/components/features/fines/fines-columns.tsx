@@ -29,7 +29,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
         day: "2-digit"
       })
 
-      return <div>{formatted}</div>
+      return <div className="w-24">{formatted}</div>
     },
   },
   {
@@ -46,6 +46,9 @@ export const columns: ColumnDef<DataTableRow>[] = [
         </Button>
       )
     },
+    cell: ({ row }) => {
+      return <div className="w-20">{row.getValue("fine_type")}</div>
+    },
   },
   {
     accessorKey: "subject",
@@ -61,6 +64,9 @@ export const columns: ColumnDef<DataTableRow>[] = [
         </Button>
       )
     },
+    cell: ({ row }) => {
+      return <div className="w-32">{row.getValue("subject")}</div>
+    },
   },
   {
     accessorKey: "description",
@@ -74,6 +80,14 @@ export const columns: ColumnDef<DataTableRow>[] = [
           Description
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const description = row.getValue("description") as string
+      return (
+        <div className="max-w-xs break-words whitespace-normal">
+          {description}
+        </div>
       )
     },
   },
