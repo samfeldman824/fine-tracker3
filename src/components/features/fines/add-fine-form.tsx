@@ -64,12 +64,13 @@ export function validateFineForm(values: FineFormValues): { valid: boolean; erro
 
 
 
-export function AddFineForm() {
+export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
   const [users, setUsers] = useState<UserSelect[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [amount, setAmount] = useState<number>(0);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     async function fetchUsers() {
@@ -136,7 +137,8 @@ export function AddFineForm() {
         <div className="flex justify-end">
           <Button
             className="bg-[#7d6c64] hover:bg-[#6b4a41] text-white font-semibold px-6 py-2 shadow"
-                        onClick={() => {
+            disabled={submitting}
+            onClick={async () => {
               const validation = validateFineForm({
                 subject_id: selectedUser,
                 description,
@@ -147,18 +149,38 @@ export function AddFineForm() {
                 alert(Object.values(validation.errors).join('\n'));
                 return;
               }
-              addFine({
-                amount: amount,
-                date: new Date().toISOString(),
-                fine_type: "fine",
-                description: description,
-                subject_id: selectedUser,
-                proposer_id: "3c47135b-be02-4ae7-9345-d704090ccdff",
-                replies: 0,
-              });
+
+              setSubmitting(true);
+              try {
+                const result = await addFine({
+                  amount: amount,
+                  date: new Date().toISOString(),
+                  fine_type: "fine",
+                  description: description,
+                  subject_id: selectedUser,
+                  proposer_id: "3c47135b-be02-4ae7-9345-d704090ccdff",
+                  replies: 0,
+                });
+
+                if (result.error) {
+                  alert('Error adding fine: ' + result.error);
+                } else {
+                  // Clear form
+                  setSelectedUser("");
+                  setDescription("");
+                  setAmount(0);
+                  
+                  // Call callback to refresh table
+                  onFineAdded?.();
+                }
+              } catch (error) {
+                alert('Error adding fine: ' + error);
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
-            Add Fine
+            {submitting ? "Adding..." : "Add Fine"}
           </Button>
         </div>
       </div>
