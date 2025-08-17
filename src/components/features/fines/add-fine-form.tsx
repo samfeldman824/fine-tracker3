@@ -6,7 +6,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { UserSelect, FineInsert } from "@/types/models";
-import { FineFormValues } from "@/types/common";
+import { FineFormValues, FineType } from "@/types/common";
+import { FineTypeToggle } from "./fine-type-toggle";
 
 async function getUsers(): Promise<UserSelect[]> {
   const supabase = createClient();
@@ -71,6 +72,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
   const [description, setDescription] = useState<string>("");
   const [amount, setAmount] = useState<number>(0);
   const [submitting, setSubmitting] = useState(false);
+  const [fineType, setFineType] = useState<FineType>("Fine");
 
   useEffect(() => {
     async function fetchUsers() {
@@ -116,6 +118,12 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
           </Select>
         </div>
         <div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Fine Type</label>
+          <FineTypeToggle value={fineType} onChange={setFineType} />
+    </div>
+        </div>
+        <div>
           <label className="block text-[#3b2a22] font-medium mb-2">Description</label>
           <Input
             placeholder="Enter description"
@@ -155,7 +163,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
                 const result = await addFine({
                   amount: amount,
                   date: new Date().toISOString(),
-                  fine_type: "Fine",
+                  fine_type: fineType,
                   description: description,
                   subject_id: selectedUser,
                   proposer_id: "3c47135b-be02-4ae7-9345-d704090ccdff",

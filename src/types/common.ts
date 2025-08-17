@@ -76,3 +76,6 @@ export type CreditFormValues = {
   description: string;
   amount: number;
 }
+
+// For fine type
+export type FineType = "Fine" | "Credit" | "Warning";
