@@ -172,8 +172,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      fine_type_enum: "fine" | "credit" | "warning"
-      role_enum: "user" | "admin"
+      fine_type_enum: "Fine" | "Credit" | "Warning"
+      role_enum: "User" | "Admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -301,8 +301,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      fine_type_enum: ["fine", "credit", "warning"],
-      role_enum: ["user", "admin"],
+      fine_type_enum: ["Fine", "Credit", "Warning"],
+      role_enum: ["User", "Admin"],
     },
   },
 } as const

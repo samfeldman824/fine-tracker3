@@ -155,7 +155,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
                 const result = await addFine({
                   amount: amount,
                   date: new Date().toISOString(),
-                  fine_type: "fine",
+                  fine_type: "Fine",
                   description: description,
                   subject_id: selectedUser,
                   proposer_id: "3c47135b-be02-4ae7-9345-d704090ccdff",
