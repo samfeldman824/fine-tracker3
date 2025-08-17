@@ -41,7 +41,7 @@ async function addFine(fine: FineInsert) {
 
 }
 
-export function validateFineForm(values: FineFormValues): { valid: boolean; errors: Record<string, string> } {
+export function validateFineForm(values: FineFormValues, fineType: FineType): { valid: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
 
   if (!values.subject_id || values.subject_id.trim() === "") {
@@ -52,7 +52,8 @@ export function validateFineForm(values: FineFormValues): { valid: boolean; erro
     errors.description = "Description is required.";
   }
 
-  if (values.amount <= 0) {
+  // Only validate amount for non-warning types
+  if (fineType !== "Warning" && values.amount <= 0) {
     errors.amount = "Amount must be greater than zero.";
   }
 
@@ -132,16 +133,18 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
-        <div>
-          <label className="block text-[#3b2a22] font-medium mb-2">Amount ($)</label>
-          <Input
-            type="number"
-            placeholder="Enter amount"
-            className="border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41] placeholder:text-gray-400"
-            value={amount.toString()}
-            onChange={(e) => setAmount(Number(e.target.value.toString()))}
-          />
-        </div>
+        {fineType !== "Warning" && (
+          <div>
+            <label className="block text-[#3b2a22] font-medium mb-2">Amount ($)</label>
+            <Input
+              type="number"
+              placeholder="Enter amount"
+              className="border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41] placeholder:text-gray-400"
+              value={amount.toString()}
+              onChange={(e) => setAmount(Number(e.target.value.toString()))}
+            />
+          </div>
+        )}
         <div className="flex justify-end">
           <Button
             className="bg-[#7d6c64] hover:bg-[#6b4a41] text-white font-semibold px-6 py-2 shadow"
@@ -151,7 +154,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
                 subject_id: selectedUser,
                 description,
                 amount
-              });
+              }, fineType);
               
               if (!validation.valid) {
                 alert(Object.values(validation.errors).join('\n'));
@@ -161,7 +164,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
               setSubmitting(true);
               try {
                 const result = await addFine({
-                  amount: amount,
+                  amount: fineType === "Warning" ? 0 : amount,
                   date: new Date().toISOString(),
                   fine_type: fineType,
                   description: description,
@@ -188,7 +191,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
               }
             }}
           >
-            {submitting ? "Adding..." : "Add Fine"}
+            {submitting ? "Adding..." : `Add ${fineType}`}
           </Button>
         </div>
       </div>
