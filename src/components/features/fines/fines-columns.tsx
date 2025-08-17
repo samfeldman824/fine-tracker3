@@ -33,7 +33,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
     },
   },
   {
-    accessorKey: "offender",
+    accessorKey: "subject",
     header: ({ column }) => {
       return (
         <Button
@@ -41,7 +41,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="text-white hover:bg-[#6b4a41] hover:text-white -ml-4 justify-start"
         >
-          Offender
+          Subject
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
@@ -89,7 +89,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
     },
   },
   {
-    accessorKey: "proposedBy",
+    accessorKey: "proposer",
     header: ({ column }) => {
       return (
         <Button

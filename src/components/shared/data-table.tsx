@@ -60,10 +60,10 @@ export function DataTable<TData, TValue>({
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">Fines Data</h2>
           <Input
-            placeholder="Filter offender..."
-            value={(table.getColumn("offender")?.getFilterValue() as string) ?? ""}
+            placeholder="Filter player..."
+            value={(table.getColumn("subject")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn("offender")?.setFilterValue(event.target.value)
+              table.getColumn("subject")?.setFilterValue(event.target.value)
             }
             className="max-w-sm bg-white text-black border-[#7d6c64] focus:border-[#6b4a41]"
           />

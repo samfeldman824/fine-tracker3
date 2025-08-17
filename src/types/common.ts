@@ -55,16 +55,17 @@ export type TableColumn<T> = {
 export type DataTableRow = {
   id: string;
   date: string | Date; // Date field - can be string or Date object
-  offender: string;
+  fine_type: string;
+  subject: string;
   description: string;
   amount: number;
-  proposedBy: string;
+  proposer: string;
   replies: number | string; // Replies field - could be count or string
 };
 
 // Form for adding fine
 export type FineFormValues = {
-  offenderId: string;
+  subject_id: string;
   description: string;
   amount: number;
 };

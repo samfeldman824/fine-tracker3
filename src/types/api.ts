@@ -4,10 +4,11 @@
 export type FineWithUsersQuery = {
   id: string;
   date: string;
+  fine_type: string;
   description: string;
   amount: number;
   replies: number;
-  offender: { name: string } | { name: string }[] | null;
+  subject: { name: string } | { name: string }[] | null;
   proposer: { name: string } | { name: string }[] | null;
 };
 

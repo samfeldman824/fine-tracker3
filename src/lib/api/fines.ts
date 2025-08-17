@@ -15,10 +15,11 @@ export async function getFines(): Promise<GetFinesResult> {
       .select(`
         id,
         date,
+        fine_type,
         description,
         amount,
         replies,
-        offender:users!fines_offender_id_fkey(name),
+        subject:users!fines_offender_id_fkey(name),
         proposer:users!fines_proposed_by_fkey(name)
       `);
 
@@ -46,10 +47,11 @@ export function transformFinesToDataTableRows(fines: FineWithUsersQuery[]): Data
   return fines.map((fine) => ({
     id: fine.id,
     date: fine.date,
-    offender: Array.isArray(fine.offender) ? fine.offender[0]?.name || 'Unknown' : fine.offender?.name || 'Unknown',
+    fine_type: fine.fine_type,
+    subject: Array.isArray(fine.subject) ? fine.subject[0]?.name || 'Unknown' : fine.subject?.name || 'Unknown',
     description: fine.description,
     amount: fine.amount,
-    proposedBy: Array.isArray(fine.proposer) ? fine.proposer[0]?.name || 'Unknown' : fine.proposer?.name || 'Unknown',
+    proposer: Array.isArray(fine.proposer) ? fine.proposer[0]?.name || 'Unknown' : fine.proposer?.name || 'Unknown',
     replies: fine.replies
   }));
 }

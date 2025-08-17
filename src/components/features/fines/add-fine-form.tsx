@@ -13,7 +13,7 @@ async function getUsers(): Promise<UserSelect[]> {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, name')
+    .select('user_id, username, name')
     .order('username');
 
   if (error) {
@@ -43,8 +43,8 @@ async function addFine(fine: FineInsert) {
 export function validateFineForm(values: FineFormValues): { valid: boolean; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
 
-  if (!values.offenderId || values.offenderId.trim() === "") {
-    errors.offenderId = "Offender is required.";
+  if (!values.subject_id || values.subject_id.trim() === "") {
+    errors.subject_id = "Subject is required.";
   }
 
   if (!values.description || values.description.trim() === "") {
@@ -102,7 +102,7 @@ export function AddFineForm() {
             </SelectTrigger>
             <SelectContent>
               {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
+                <SelectItem key={user.user_id} value={user.user_id}>
                   {user.name || user.username}
                 </SelectItem>
               ))}
@@ -138,7 +138,7 @@ export function AddFineForm() {
             className="bg-[#7d6c64] hover:bg-[#6b4a41] text-white font-semibold px-6 py-2 shadow"
                         onClick={() => {
               const validation = validateFineForm({
-                offenderId: selectedUser,
+                subject_id: selectedUser,
                 description,
                 amount
               });
@@ -149,11 +149,11 @@ export function AddFineForm() {
               }
               addFine({
                 amount: amount,
-                created_at: new Date().toISOString(),
                 date: new Date().toISOString(),
+                fine_type: "fine",
                 description: description,
-                offender_id: selectedUser,
-                proposed_by: "68accc08-996e-4f13-ae69-f521fa2387f6",
+                subject_id: selectedUser,
+                proposer_id: "3c47135b-be02-4ae7-9345-d704090ccdff",
                 replies: 0,
               });
             }}

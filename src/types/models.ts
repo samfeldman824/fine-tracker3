@@ -15,7 +15,7 @@ export type UserInsert = TablesInsert<"users">;
 export type UserUpdate = TablesUpdate<"users">;
 
 // === Extended Types for UI ===
-export type UserSelect = Pick<User, "id" | "username" | "name">;
+export type UserSelect = Pick<User, "user_id" | "username" | "name">;
 
 // === Composite Types ===
 export type FineWithUsers = Fine & {

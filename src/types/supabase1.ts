@@ -17,54 +17,6 @@ export type Database = {
       fines: {
         Row: {
           amount: number
-          date: string
-          description: string
-          fine_type: Database["public"]["Enums"]["fine_type_enum"]
-          id: string
-          proposer_id: string
-          replies: number
-          subject_id: string
-        }
-        Insert: {
-          amount: number
-          date?: string
-          description: string
-          fine_type?: Database["public"]["Enums"]["fine_type_enum"]
-          id?: string
-          proposer_id: string
-          replies: number
-          subject_id: string
-        }
-        Update: {
-          amount?: number
-          date?: string
-          description?: string
-          fine_type?: Database["public"]["Enums"]["fine_type_enum"]
-          id?: string
-          proposer_id?: string
-          replies?: number
-          subject_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fines_offender_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "fines_proposed_by_fkey"
-            columns: ["proposer_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      "fines-old": {
-        Row: {
-          amount: number
           created_at: string
           date: string
           description: string
@@ -98,46 +50,19 @@ export type Database = {
             foreignKeyName: "fines_offender_id_fkey"
             columns: ["offender_id"]
             isOneToOne: false
-            referencedRelation: "users-old"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "fines_proposed_by_fkey"
             columns: ["proposed_by"]
             isOneToOne: false
-            referencedRelation: "users-old"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
       }
       users: {
-        Row: {
-          created_at: string
-          name: string
-          password_hash: string
-          role: string
-          user_id: string
-          username: string
-        }
-        Insert: {
-          created_at?: string
-          name?: string
-          password_hash?: string
-          role?: string
-          user_id?: string
-          username?: string
-        }
-        Update: {
-          created_at?: string
-          name?: string
-          password_hash?: string
-          role?: string
-          user_id?: string
-          username?: string
-        }
-        Relationships: []
-      }
-      "users-old": {
         Row: {
           created_at: string
           id: string
@@ -152,7 +77,7 @@ export type Database = {
           name?: string
           password_hash?: string
           role?: string
-          username: string
+          username?: string
         }
         Update: {
           created_at?: string
@@ -172,8 +97,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      fine_type_enum: "fine" | "credit" | "warning"
-      role_enum: "user" | "admin"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -300,9 +224,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      fine_type_enum: ["fine", "credit", "warning"],
-      role_enum: ["user", "admin"],
-    },
+    Enums: {},
   },
 } as const
