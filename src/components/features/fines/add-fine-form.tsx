@@ -133,18 +133,28 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
-        {fineType !== "Warning" && (
-          <div>
-            <label className="block text-[#3b2a22] font-medium mb-2">Amount ($)</label>
-            <Input
-              type="number"
-              placeholder="Enter amount"
-              className="border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41] placeholder:text-gray-400"
-              value={amount.toString()}
-              onChange={(e) => setAmount(Number(e.target.value.toString()))}
-            />
-          </div>
-        )}
+        <div>
+          {/* gray out box if fine is a warning */}
+          <label className={`block font-medium mb-2 ${fineType === "Warning" ? "text-gray-400" : "text-[#3b2a22]"}`}>
+            Amount ($)
+          </label>
+          <Input
+            type="number"
+            placeholder={fineType === "Warning" ? "Not applicable for warnings" : "Enter amount"}
+            className={`border-[#7d6c64] focus:border-[#6b4a41] focus:ring-[#6b4a41] placeholder:text-gray-400 ${
+              fineType === "Warning" 
+                ? "bg-gray-100 text-gray-500 cursor-not-allowed opacity-60" 
+                : ""
+            }`}
+            value={fineType === "Warning" ? "" : amount.toString()}
+            onChange={(e) => {
+              if (fineType !== "Warning") {
+                setAmount(Number(e.target.value.toString()));
+              }
+            }}
+            disabled={fineType === "Warning"}
+          />
+        </div>
         <div className="flex justify-end">
           <Button
             className="bg-[#7d6c64] hover:bg-[#6b4a41] text-white font-semibold px-6 py-2 shadow"
