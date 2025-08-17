@@ -54,30 +54,32 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="w-full bg-white shadow-md rounded-lg overflow-hidden">
+    <div className="w-full">
       {/* Header with filter */}
-      <div className="bg-[#3b2a22] text-white px-6 py-4">
+      <div className="bg-gradient-to-r from-[#3b2a22] to-[#4a3528] text-white px-6 py-4 rounded-t-lg">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold">Fines Data</h2>
-          <Input
-            placeholder="Filter player..."
-            value={(table.getColumn("subject")?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn("subject")?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm bg-white text-black border-[#7d6c64] focus:border-[#6b4a41]"
-          />
+          <div className="relative">
+            <Input
+              placeholder="Filter player..."
+              value={(table.getColumn("subject")?.getFilterValue() as string) ?? ""}
+              onChange={(event) =>
+                table.getColumn("subject")?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm bg-white/95 text-gray-900 border-0 focus:ring-2 focus:ring-white/50 placeholder:text-gray-500"
+            />
+          </div>
         </div>
       </div>
       
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-[#7d6c64]">
+          <TableHeader className="bg-gray-50 border-b border-gray-200">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b border-[#6b4a41] hover:bg-[#7d6c64]">
+              <TableRow key={headerGroup.id} className="hover:bg-gray-50">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="text-white font-semibold px-6 py-3">
+                    <TableHead key={header.id} className="text-gray-700 font-semibold px-6 py-4 text-sm">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -96,12 +98,12 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={`border-b border-gray-200 hover:bg-[#f5f3f1] ${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                    index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
                   }`}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-6 py-4">
+                    <TableCell key={cell.id} className="px-6 py-4 text-sm">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -110,7 +112,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center text-gray-500">
-                  No results.
+                  No fines found.
                 </TableCell>
               </TableRow>
             )}

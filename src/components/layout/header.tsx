@@ -10,36 +10,36 @@ type HeaderProps = {
 
 export default function Header({ username, role }: HeaderProps) {
     return (
-        <header className="bg-[#3b2a22] text-white shadow-md w-full">
-            <div className="mx-auto flex items-center justify-between px-6 py-4">
+        <header className="bg-gradient-to-r from-[#3b2a22] to-[#4a3528] text-white shadow-lg border-b border-[#2a1a12]">
+            <div className="mx-auto flex items-center justify-between px-6 py-4 max-w-7xl">
                 {/* Left: Title */}
-                <h1 className="text-2xl font-bold">
+                <h1 className="text-2xl font-bold tracking-tight">
                     BMT Fines 2025-2026
                 </h1>
 
                 {/* Middle: Navigation */}
-                <nav className="flex gap-4">
+                <nav className="flex gap-3">
                     <Link
                         href="/fines"
-                        className="rounded-md bg-[#7d6c64] px-4 py-2 font-semibold shadow hover:opacity-90"
+                        className="rounded-lg bg-white/10 px-4 py-2 font-medium shadow-sm hover:bg-white/20 transition-colors duration-200"
                     >
                         Fines
                     </Link>
                     <Link
                         href="/totals"
-                        className="rounded-md bg-[#7d6c64] px-4 py-2 font-semibold shadow hover:opacity-90"
+                        className="rounded-lg bg-white/10 px-4 py-2 font-medium shadow-sm hover:bg-white/20 transition-colors duration-200"
                     >
                         Totals
                     </Link>
                 </nav>
 
                 {/* Right: User Info + Logout */}
-                <div className="flex items-center gap-4 rounded-md bg-[#6b4a41] px-4 py-2">
-                    <span className="font-semibold">
+                <div className="flex items-center gap-4 rounded-lg bg-white/10 px-4 py-2 backdrop-blur-sm">
+                    <span className="font-medium text-sm">
                         {username} {role ? `(${role})` : ""}
                     </span>
                     <button
-                        className="rounded-md bg-white px-4 py-2 font-bold text-[#5b3a32] shadow hover:bg-gray-100"
+                        className="rounded-md bg-white/20 px-4 py-2 font-medium text-white shadow-sm hover:bg-white/30 transition-colors duration-200"
                     >
                         Logout
                     </button>

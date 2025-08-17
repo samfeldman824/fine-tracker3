@@ -13,7 +13,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="text-white hover:bg-[#6b4a41] hover:text-white -ml-4 justify-start"
+          className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 -ml-4 justify-start font-semibold"
         >
           Date
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -39,7 +39,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="text-white hover:bg-[#6b4a41] hover:text-white -ml-4 justify-start"
+          className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 -ml-4 justify-start font-semibold"
         >
           Subject
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -54,7 +54,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="text-white hover:bg-[#6b4a41] hover:text-white -ml-4 justify-start"
+          className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 -ml-4 justify-start font-semibold"
         >
           Description
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -70,7 +70,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="text-white hover:bg-[#6b4a41] hover:text-white -mr-4 justify-end"
+            className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 -mr-4 justify-end font-semibold"
           >
             Amount
             <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -95,7 +95,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="text-white hover:bg-[#6b4a41] hover:text-white -ml-4 justify-start"
+          className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 -ml-4 justify-start font-semibold"
         >
           Proposed By
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -110,7 +110,7 @@ export const columns: ColumnDef<DataTableRow>[] = [
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="text-white hover:bg-[#6b4a41] hover:text-white -ml-4 justify-start"
+          className="text-gray-700 hover:bg-gray-200 hover:text-gray-900 -ml-4 justify-start font-semibold"
         >
           Replies
           <ArrowUpDown className="ml-2 h-4 w-4" />
