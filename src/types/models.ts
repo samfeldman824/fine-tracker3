@@ -25,7 +25,7 @@ export type FineWithUsers = Fine & {
 
 // === Form Types ===
 export type AddFineFormData = {
-  offender_id: string;
+  subject_id: string;
   description: string;
   amount: number;
   date: string;

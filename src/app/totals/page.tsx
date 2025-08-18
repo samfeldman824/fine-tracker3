@@ -31,7 +31,7 @@ export default function Totals() {
         .from('fines')
         .select(`
           amount,
-          subject:users!fines_offender_id_fkey(name)
+          subject:users!fines_subject_id_fkey(name)
         `);
 
       if (error) {

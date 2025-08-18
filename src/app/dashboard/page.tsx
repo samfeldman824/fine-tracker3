@@ -42,8 +42,8 @@ export default function Home() {
           description,
           amount,
           replies,
-          subject:users!fines_offender_id_fkey(name),
-          proposer:users!fines_proposed_by_fkey(name)
+          subject:users!fines_subject_id_fkey(name),
+          proposer:users!fines_proposer_id_fkey(name)
         `)
         .order('date', { ascending: false });
 

@@ -47,14 +47,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fines_offender_id_fkey"
+            foreignKeyName: "fines_subject_id_fkey"
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "fines_proposed_by_fkey"
+            foreignKeyName: "fines_proposer_id_fkey"
             columns: ["proposer_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -69,7 +69,7 @@ export type Database = {
           date: string
           description: string
           id: string
-          offender_id: string
+          subject_id: string
           proposed_by: string
           replies: number
         }
@@ -79,7 +79,7 @@ export type Database = {
           date?: string
           description: string
           id?: string
-          offender_id?: string
+          subject_id?: string
           proposed_by?: string
           replies: number
         }
@@ -89,20 +89,20 @@ export type Database = {
           date?: string
           description?: string
           id?: string
-          offender_id?: string
+          subject_id?: string
           proposed_by?: string
           replies?: number
         }
         Relationships: [
           {
-            foreignKeyName: "fines_offender_id_fkey"
-            columns: ["offender_id"]
+            foreignKeyName: "fines_subject_id_fkey"
+            columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "users-old"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fines_proposed_by_fkey"
+            foreignKeyName: "fines_proposer_id_fkey"
             columns: ["proposed_by"]
             isOneToOne: false
             referencedRelation: "users-old"
