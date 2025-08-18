@@ -24,8 +24,8 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
         const supabase = createClient();
 
         const { data, error } = await supabase
-        .from('fines')
-        .select(`
+          .from('fines')
+          .select(`
           id,
           date,
           fine_type,
@@ -35,8 +35,8 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
           subject:users!fines_subject_id_fkey(name),
           proposer:users!fines_proposer_id_fkey(name)
         `)
-        .order('date', { ascending: false });
-        
+          .order('date', { ascending: false });
+
         const sampleData: FineWithUsersQuery[] = [
           {
             id: '1',
@@ -108,7 +108,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
       case 'Fine': return 'text-red-600 bg-red-50';
       case 'Credit': return 'text-green-600 bg-green-50';
       case 'Warning': return 'text-yellow-600 bg-yellow-50';
-      default: 
+      default:
         console.log('Unknown type for color:', type);
         return 'text-gray-600 bg-gray-50';
     }
@@ -120,7 +120,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
       case 'Fine': return '💸';
       case 'Credit': return '💰';
       case 'Warning': return '⚠️';
-      default: 
+      default:
         console.log('Unknown type for emoji:', type);
         return '📝';
     }
@@ -132,10 +132,10 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
 
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
@@ -178,10 +178,10 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
       });
     }
   };
@@ -236,7 +236,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
             {fines.map((fine) => {
               const proposerName = fine.proposer && typeof fine.proposer === 'object' && 'name' in fine.proposer ? fine.proposer.name : 'Unknown';
               const subjectName = fine.subject && typeof fine.subject === 'object' && 'name' in fine.subject ? fine.subject.name : 'Unknown';
-              
+
               return (
                 <div key={fine.id} className="group hover:bg-gray-50 -mx-4 px-4 py-1 rounded border-b border-gray-300">
                   <div className="flex space-x-3">
@@ -265,7 +265,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                           <span className="text-sm text-gray-600">→</span>
                           <span className="text-sm font-medium text-gray-900">{subjectName}</span>
                         </div> */}
-                        
+
                         <div className="text-sm text-gray-900 leading-tight">
                           {fine.amount === 0
                             ? "Fine Warning"
