@@ -3,10 +3,12 @@
 import { Header } from "@/components/layout";
 import { DataTable } from "@/components/shared";
 import { AddFineForm, columns } from "@/components/features/fines";
+import { ProtectedRoute } from "@/components/features/auth";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { DataTableRow } from "@/types/common";
 import type { FineWithUsersQuery } from "@/types/api";
+import { useAuth } from "@/contexts/auth-context";
 
 // Transform function moved from API file for client-side use
 function transformFinesToDataTableRows(fines: FineWithUsersQuery[]): DataTableRow[] {
@@ -25,6 +27,7 @@ function transformFinesToDataTableRows(fines: FineWithUsersQuery[]): DataTableRo
 export default function Home() {
   const [finesData, setFinesData] = useState<DataTableRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const fetchFines = async () => {
     try {
@@ -86,21 +89,23 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header username={"Jit Bag"} role="Admin" />
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="space-y-8">
-          {/* Data Table Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <DataTable columns={columns} data={finesData} loading={loading} />
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50">
+        <Header username={user?.name || "User"} role={user?.role || "User"} />
+        <main className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="space-y-8">
+            {/* Data Table Section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <DataTable columns={columns} data={finesData} loading={loading} />
+            </div>
+            
+            {/* Add Fine Form Section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <AddFineForm onFineAdded={fetchFines} />
+            </div>
           </div>
-          
-          {/* Add Fine Form Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <AddFineForm onFineAdded={fetchFines} />
-          </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 }
