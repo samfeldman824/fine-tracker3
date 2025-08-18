@@ -122,7 +122,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
         <div className="space-y-2">
           <label className="text-sm font-medium">Fine Type</label>
           <FineTypeToggle value={fineType} onChange={setFineType} />
-    </div>
+        </div>
         </div>
         <div>
           <label className="block text-[#3b2a22] font-medium mb-2">Description</label>
