@@ -14,6 +14,7 @@ type UserFineTotal = {
 
 type FineTotalQuery = {
   amount: number;
+  fine_type: string;
   subject: { name: string } | { name: string }[] | null;
 };
 
@@ -31,6 +32,7 @@ export default function Totals() {
         .from('fines')
         .select(`
           amount,
+          fine_type,
           subject:users!fines_subject_id_fkey(name)
         `);
 
@@ -54,7 +56,8 @@ export default function Totals() {
         }
         
         const currentTotal = totalsMap.get(subjectName) || 0;
-        totalsMap.set(subjectName, currentTotal + fine.amount);
+        const amountToAdd = fine.fine_type === "Credit" ? -fine.amount : fine.amount;
+        totalsMap.set(subjectName, currentTotal + amountToAdd);
       });
 
       // Convert to array and sort by name
