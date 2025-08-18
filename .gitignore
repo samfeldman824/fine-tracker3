@@ -42,3 +42,6 @@ next-env.d.ts
 
 # vscode files
 .vscode*
+
+# kiro files
+.kiro*
