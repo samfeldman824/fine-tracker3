@@ -63,10 +63,16 @@ export function validateFineForm(values: FineFormValues, fineType: FineType): { 
   };
 }
 
+type AddFineFormProps = {
+  onFineAdded?: () => void;
+  currentUserObject: {name: string, user_id: string}; 
+};
 
 
+// To add to the parameter type, expand the object type in the function parameter.
+// For example, to add a new prop called `title` of type string:
 
-export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
+export function AddFineForm({ onFineAdded, currentUserObject }: AddFineFormProps) {
   const [users, setUsers] = useState<UserSelect[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string>("");
@@ -179,7 +185,7 @@ export function AddFineForm({ onFineAdded }: { onFineAdded?: () => void }) {
                   fine_type: fineType,
                   description: description,
                   subject_id: selectedUser,
-                  proposer_id: "3c47135b-be02-4ae7-9345-d704090ccdff",
+                  proposer_id: currentUserObject.user_id,
                   replies: 0,
                 });
 

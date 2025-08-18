@@ -101,7 +101,7 @@ export default function Home() {
             
             {/* Add Fine Form Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <AddFineForm onFineAdded={fetchFines} />
+              <AddFineForm onFineAdded={fetchFines} currentUserObject={{ user_id: user?.id || '', name: user?.name || '' }} />
             </div>
           </div>
         </main>
