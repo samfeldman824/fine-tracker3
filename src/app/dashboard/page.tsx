@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { DataTableRow } from "@/types/common";
 import type { FineWithUsersQuery } from "@/types/api";
 import { useAuth } from "@/contexts/auth-context";
+import FinesSlackInterface from '@/components/messages/slack'
+
 
 // Transform function moved from API file for client-side use
 function transformFinesToDataTableRows(fines: FineWithUsersQuery[]): DataTableRow[] {
@@ -96,7 +98,8 @@ export default function Home() {
           <div className="space-y-8">
             {/* Data Table Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <DataTable columns={columns} data={finesData} loading={loading} />
+              {/* <DataTable columns={columns} data={finesData} loading={loading} /> */}
+              <FinesSlackInterface/>
             </div>
             
             {/* Add Fine Form Section */}
