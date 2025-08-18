@@ -7,7 +7,11 @@ import { createClient } from '@/lib/supabase/client';
 // You'll need to import this from your actual file
 // import { getFines } from '@/path/to/your/getFines';
 
-const FinesSlackInterface = () => {
+type FinesSlackInterfaceProps = {
+  refreshKey?: number;
+};
+
+const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
   const [fines, setFines] = useState<FineWithUsersQuery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +34,8 @@ const FinesSlackInterface = () => {
           replies,
           subject:users!fines_subject_id_fkey(name),
           proposer:users!fines_proposer_id_fkey(name)
-        `);
+        `)
+        .order('date', { ascending: false });
         
         const sampleData: FineWithUsersQuery[] = [
           {
@@ -95,7 +100,7 @@ const FinesSlackInterface = () => {
     };
 
     fetchFines();
-  }, []);
+  }, [refreshKey]);
 
   const getTypeColor = (type: string) => {
     console.log('Getting color for type:', type);
@@ -152,7 +157,7 @@ const FinesSlackInterface = () => {
     (fine.proposer && typeof fine.proposer === 'object' && 'name' in fine.proposer && fine.proposer.name.toLowerCase().includes(filterPlayer.toLowerCase()))
   );
 
-  // Group fines by date
+  // Group fines by date (render all fines; scrolling container will limit visible count)
   const groupedFines = filteredFines.reduce((groups, fine) => {
     const date = new Date(fine.date).toDateString();
     if (!groups[date]) {
@@ -198,14 +203,14 @@ const FinesSlackInterface = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col bg-white">
       {/* Header */}
       <div className="bg-gray-800 text-white px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="w-6 h-6 bg-purple-600 rounded flex items-center justify-center text-white font-bold text-sm">
             #
           </div>
-          <h1 className="text-lg font-semibold">fines-data</h1>
+          <h1 className="text-lg font-semibold">Fines</h1>
         </div>
         <input
           type="text"
@@ -217,7 +222,7 @@ const FinesSlackInterface = () => {
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-1">
+      <div className="overflow-y-auto p-4 space-y-1 max-h-[520px]">
         {Object.entries(groupedFines).map(([date, fines]) => (
           <div key={date}>
             {/* Date Divider */}
@@ -301,15 +306,6 @@ const FinesSlackInterface = () => {
       </div>
 
       {/* Message Input */}
-      <div className="border-t border-gray-200 p-4">
-        <div className="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-          <input
-            type="text"
-            placeholder="Message #fines-data"
-            className="w-full outline-none resize-none text-sm"
-          />
-        </div>
-      </div>
     </div>
   );
 };

@@ -29,6 +29,7 @@ function transformFinesToDataTableRows(fines: FineWithUsersQuery[]): DataTableRo
 export default function Home() {
   const [finesData, setFinesData] = useState<DataTableRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [slackRefreshKey, setSlackRefreshKey] = useState(0);
   const { user } = useAuth();
 
   const fetchFines = async () => {
@@ -61,6 +62,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFineAdded = async () => {
+    await fetchFines();
+    setSlackRefreshKey((key) => key + 1);
   };
 
   useEffect(() => {
@@ -99,12 +105,12 @@ export default function Home() {
             {/* Data Table Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               {/* <DataTable columns={columns} data={finesData} loading={loading} /> */}
-              <FinesSlackInterface/>
+              <FinesSlackInterface refreshKey={slackRefreshKey} />
             </div>
             
             {/* Add Fine Form Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <AddFineForm onFineAdded={fetchFines} currentUserObject={{ user_id: user?.id || '', name: user?.name || '' }} />
+              <AddFineForm onFineAdded={handleFineAdded} currentUserObject={{ user_id: user?.id || '', name: user?.name || '' }} />
             </div>
           </div>
         </main>
