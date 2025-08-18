@@ -255,7 +255,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
 
                       {/* Fine Details */}
                       <div className="mt-0.5">
-                        <div className="flex items-center space-x-2 mb-1">
+                        {/* <div className="flex items-center space-x-2 mb-1">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(fine.fine_type)}`}>
                             {getTypeEmoji(fine.fine_type)} {fine.fine_type}
                           </span>
@@ -264,10 +264,15 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                           </span>
                           <span className="text-sm text-gray-600">→</span>
                           <span className="text-sm font-medium text-gray-900">{subjectName}</span>
-                        </div>
+                        </div> */}
                         
                         <div className="text-sm text-gray-900 leading-tight">
-                          {fine.description}
+                          {fine.amount === 0
+                            ? "Fine Warning"
+                            : fine.fine_type === "Credit"
+                              ? `FC $${fine.amount}`
+                              : `$${fine.amount}`
+                          } {subjectName} - {fine.description}
                         </div>
                       </div>
 
