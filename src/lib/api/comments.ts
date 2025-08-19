@@ -5,7 +5,8 @@ import type {
     CommentUpdate,
     CommentWithAuthor,
     CommentWithReplies,
-    CommentsResponse
+    CommentsResponse,
+    UserSelect
 } from "@/types/models";
 import type { SupabaseResponse } from "@/types/api";
 
@@ -404,4 +405,36 @@ export function canUserDeleteComment(comment: Comment, userId: string): boolean 
  */
 export function canReplyToComment(comment: Comment): boolean {
     return !comment.is_deleted;
+}
+
+/**
+ * Extracts unique users from a comment thread (including replies)
+ * @param comment - The comment thread to extract users from
+ * @returns Array of unique users who participated in the thread
+ */
+export function extractThreadUsers(comment: CommentWithReplies): UserSelect[] {
+    const users = new Map<string, UserSelect>();
+    
+    // Add the main comment author
+    if (comment.author) {
+        users.set(comment.author.user_id, comment.author);
+    }
+    
+    // Recursively add users from replies
+    function addUsersFromReplies(replies: CommentWithReplies[]) {
+        replies.forEach(reply => {
+            if (reply.author) {
+                users.set(reply.author.user_id, reply.author);
+            }
+            if (reply.replies && reply.replies.length > 0) {
+                addUsersFromReplies(reply.replies);
+            }
+        });
+    }
+    
+    if (comment.replies && comment.replies.length > 0) {
+        addUsersFromReplies(comment.replies);
+    }
+    
+    return Array.from(users.values());
 }

@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { MessageCircle, MoreVertical, Edit2, Trash2, Check, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { updateComment, validateCommentContent, deleteComment } from "@/lib/api/comments";
+import { updateComment, validateCommentContent, deleteComment, extractThreadUsers } from "@/lib/api/comments";
 import { DeleteCommentDialog } from "./delete-comment-dialog";
 import { ButtonLoadingState } from "./loading-states";
+import { CommentAvatars } from "./comment-avatars";
 import { useErrorHandler } from "@/lib/error-handling";
-import type { CommentWithAuthor } from "@/types/models";
+import type { CommentWithAuthor, CommentWithReplies } from "@/types/models";
 import type { OptimisticComment } from "@/hooks/use-optimistic-comments";
 
 interface CommentItemProps {
-    comment: CommentWithAuthor | OptimisticComment;
+    comment: CommentWithAuthor | CommentWithReplies | OptimisticComment;
     currentUserId?: string;
     canEdit?: boolean;
     onReply?: (commentId: string) => void;
@@ -20,6 +21,7 @@ interface CommentItemProps {
     onCommentUpdated?: (updatedComment: CommentWithAuthor) => void;
     onCommentDeleted?: (commentId: string) => void;
     hasReplies?: boolean;
+    showParticipantAvatars?: boolean;
     className?: string;
 }
 
@@ -98,6 +100,7 @@ export function CommentItem({
     onCommentUpdated,
     onCommentDeleted,
     hasReplies = false,
+    showParticipantAvatars = false,
     className = ""
 }: CommentItemProps) {
     const [showActions, setShowActions] = useState(false);
@@ -372,6 +375,34 @@ export function CommentItem({
                                         <AlertCircle className="w-3 h-3 mr-1" />
                                         {comment.error}
                                     </div>
+                                )}
+                                
+                                {/* Participant avatars for comments with replies */}
+                                {showParticipantAvatars && hasReplies && 'replies' in comment && comment.replies && comment.replies.length > 0 && (
+                                    (() => {
+                                        const users = extractThreadUsers(comment);
+                                        console.log('CommentItem: Extracted users for comment', comment.id, ':', users);
+                                        console.log('CommentItem: showParticipantAvatars, hasReplies, replies:', { showParticipantAvatars, hasReplies, replies: comment.replies });
+                                        return (
+                                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                                                <div className="flex items-center space-x-2">
+                                                    <CommentAvatars
+                                                        users={users}
+                                                        maxVisible={3}
+                                                        size="sm"
+                                                    />
+                                                    <span className="text-xs text-gray-500">
+                                                        {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
+                                                    </span>
+                                                </div>
+                                                {comment.replies.length > 0 && (
+                                                    <span className="text-xs text-gray-400">
+                                                        Last reply {formatRelativeTime(comment.replies[comment.replies.length - 1].created_at)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })()
                                 )}
                             </div>
                         )}

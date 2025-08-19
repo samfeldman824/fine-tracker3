@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle, MoreVertical, Smile, Reply, Bookmark, ChevronDown, ChevronRight } from 'lucide-react';
 import type { FineWithUsersQuery } from '@/types/api';
 import { createClient } from '@/lib/supabase/client';
-import { CommentsSection } from '@/components/features/comments';
+import { CommentsSection, CommentAvatars } from '@/components/features/comments';
 import { useAuth } from '@/contexts/auth-context';
+import { getCommentsHierarchy } from '@/lib/api/comments';
+import type { UserSelect } from '@/types/models';
 
 
 // You'll need to import this from your actual file
@@ -20,33 +22,59 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
   const [filterPlayer, setFilterPlayer] = useState('');
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const [commentParticipants, setCommentParticipants] = useState<Record<string, UserSelect[]>>({});
   const { user } = useAuth();
 
-  // Fetch comment counts for all fines
-  const fetchCommentCounts = async (fineIds: string[]) => {
+  // Fetch comment counts and participants for all fines
+  const fetchCommentData = async (fineIds: string[]) => {
     try {
       const supabase = createClient();
       
       const { data, error } = await supabase
         .from('comments')
-        .select('fine_id')
+        .select(`
+          fine_id,
+          author:users!comments_author_id_fkey(user_id, username, name)
+        `)
         .in('fine_id', fineIds)
         .eq('is_deleted', false);
 
       if (error) {
-        console.error('Error fetching comment counts:', error);
+        console.error('Error fetching comment data:', error);
         return;
       }
 
-      // Count comments per fine
+      // Count comments per fine and collect participants
       const counts: Record<string, number> = {};
+      const participants: Record<string, Set<string>> = {};
+      
       data?.forEach(comment => {
-        counts[comment.fine_id] = (counts[comment.fine_id] || 0) + 1;
+        const fineId = comment.fine_id;
+        counts[fineId] = (counts[fineId] || 0) + 1;
+        
+        // Collect unique participants
+        if (!participants[fineId]) {
+          participants[fineId] = new Set();
+        }
+        
+        if (comment.author) {
+          const author = Array.isArray(comment.author) ? comment.author[0] : comment.author;
+          if (author) {
+            participants[fineId].add(JSON.stringify(author));
+          }
+        }
+      });
+
+      // Convert participants to UserSelect arrays
+      const participantsArray: Record<string, UserSelect[]> = {};
+      Object.entries(participants).forEach(([fineId, participantSet]) => {
+        participantsArray[fineId] = Array.from(participantSet).map(p => JSON.parse(p));
       });
 
       setCommentCounts(counts);
+      setCommentParticipants(participantsArray);
     } catch (err) {
-      console.error('Failed to fetch comment counts:', err);
+      console.error('Failed to fetch comment data:', err);
     }
   };
 
@@ -129,7 +157,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
         
         // Fetch comment counts for all fines
         if (finesData.length > 0) {
-          await fetchCommentCounts(finesData.map(fine => fine.id));
+          await fetchCommentData(finesData.map(fine => fine.id));
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -253,6 +281,11 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
       ...prev,
       [fineId]: newCount
     }));
+    
+    // Refresh comment data to get updated participants
+    if (fines.length > 0) {
+      fetchCommentData(fines.map(fine => fine.id));
+    }
   };
 
   const filteredFines = fines.filter(fine =>
@@ -356,12 +389,6 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                       <div className="flex items-baseline space-x-2">
                         <span className="font-semibold text-gray-900">{proposerName}</span>
                         <span className="text-xs text-gray-500">{formatTimestamp(fine.date)}</span>
-                        {/* Comment count badge */}
-                        {(commentCounts[fine.id] || 0) > 0 && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {commentCounts[fine.id]} 💬
-                          </span>
-                        )}
                       </div>
 
                       {/* Fine Details */}
@@ -414,7 +441,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                       {(commentCounts[fine.id] || 0) > 0 && (
                         <button
                           onClick={() => toggleComments(fine.id)}
-                          className="mt-1 flex items-center space-x-1 text-xs text-blue-600 hover:underline cursor-pointer hover:bg-blue-50 rounded px-1 py-0.5 transition-colors"
+                          className="mt-1 flex items-center space-x-2 text-xs text-blue-600 hover:underline cursor-pointer hover:bg-blue-50 rounded px-1 py-0.5 transition-colors"
                         >
                           {expandedComments.has(fine.id) ? (
                             <ChevronDown size={12} />
@@ -424,6 +451,15 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                           <span>
                             {commentCounts[fine.id]} {commentCounts[fine.id] === 1 ? 'comment' : 'comments'}
                           </span>
+                          {/* Show participant avatars if there are multiple participants */}
+                          {commentParticipants[fine.id] && commentParticipants[fine.id].length > 1 && (
+                            <CommentAvatars
+                              users={commentParticipants[fine.id]}
+                              maxVisible={3}
+                              size="sm"
+                              className="ml-1"
+                            />
+                          )}
                         </button>
                       )}
 
