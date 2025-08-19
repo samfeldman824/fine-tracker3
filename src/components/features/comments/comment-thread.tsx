@@ -16,6 +16,7 @@ interface CommentThreadProps {
     onReply?: (parentId: string, content: string) => void;
     onEdit?: (commentId: string) => void;
     onDelete?: (commentId: string) => void;
+    onCommentUpdated?: (updatedComment: CommentWithReplies) => void;
     className?: string;
 }
 
@@ -31,6 +32,7 @@ export function CommentThread({
     onReply,
     onEdit,
     onDelete,
+    onCommentUpdated,
     className = ""
 }: CommentThreadProps) {
     const [showReplyInput, setShowReplyInput] = useState(false);
@@ -103,6 +105,14 @@ export function CommentThread({
                 onReply={handleReplyClick}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onCommentUpdated={(updatedComment) => {
+                    if (onCommentUpdated) {
+                        onCommentUpdated({
+                            ...comment,
+                            ...updatedComment
+                        });
+                    }
+                }}
                 className={depth > 0 ? "border-l-2 border-gray-100 pl-4" : ""}
             />
 
@@ -135,6 +145,7 @@ export function CommentThread({
                             onReply={onReply}
                             onEdit={onEdit}
                             onDelete={onDelete}
+                            onCommentUpdated={onCommentUpdated}
                         />
                     ))}
                 </div>

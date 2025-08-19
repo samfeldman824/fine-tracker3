@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react";
-import { MessageCircle, MoreVertical, Edit2, Trash2 } from "lucide-react";
+import { MessageCircle, MoreVertical, Edit2, Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { updateComment, validateCommentContent } from "@/lib/api/comments";
 import type { CommentWithAuthor } from "@/types/models";
 
 interface CommentItemProps {
@@ -12,6 +13,7 @@ interface CommentItemProps {
     onReply?: (commentId: string) => void;
     onEdit?: (commentId: string) => void;
     onDelete?: (commentId: string) => void;
+    onCommentUpdated?: (updatedComment: CommentWithAuthor) => void;
     className?: string;
 }
 
@@ -87,9 +89,14 @@ export function CommentItem({
     onReply,
     onEdit,
     onDelete,
+    onCommentUpdated,
     className = ""
 }: CommentItemProps) {
     const [showActions, setShowActions] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(comment.content);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
 
     // Check if current user can edit/delete this comment
     const isOwner = currentUserId === comment.author_id;
@@ -98,6 +105,74 @@ export function CommentItem({
 
     // Show edited indicator if comment was modified
     const wasEdited = comment.updated_at !== comment.created_at;
+
+    // Handle edit button click
+    const handleEditClick = () => {
+        setIsEditing(true);
+        setEditContent(comment.content);
+        setEditError(null);
+        if (onEdit) {
+            onEdit(comment.id);
+        }
+    };
+
+    // Handle edit cancel
+    const handleEditCancel = () => {
+        setIsEditing(false);
+        setEditContent(comment.content);
+        setEditError(null);
+    };
+
+    // Handle edit save
+    const handleEditSave = async () => {
+        setEditError(null);
+
+        // Validate content
+        const validation = validateCommentContent(editContent);
+        if (!validation.isValid) {
+            setEditError(validation.errors[0]?.message || "Invalid comment content");
+            return;
+        }
+
+        // Check if content actually changed
+        if (editContent.trim() === comment.content.trim()) {
+            setIsEditing(false);
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const result = await updateComment(comment.id, {
+                content: editContent.trim()
+            });
+
+            if (result.error) {
+                setEditError(result.error);
+                return;
+            }
+
+            if (result.data) {
+                // Update the comment with new data
+                const updatedComment: CommentWithAuthor = {
+                    ...comment,
+                    content: result.data.content,
+                    updated_at: result.data.updated_at
+                };
+
+                // Notify parent component of the update
+                if (onCommentUpdated) {
+                    onCommentUpdated(updatedComment);
+                }
+
+                setIsEditing(false);
+            }
+        } catch (err) {
+            setEditError(err instanceof Error ? err.message : "Failed to update comment");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div 
@@ -128,61 +203,123 @@ export function CommentItem({
                         )}
                     </div>
 
-                    {/* Comment text */}
-                    <div className="mt-1 text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">
-                        {comment.content}
-                    </div>
+                    {/* Comment text or edit form */}
+                    {isEditing ? (
+                        <div className="mt-1 space-y-2">
+                            <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md resize-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                rows={3}
+                                disabled={isSubmitting}
+                                autoFocus
+                            />
+                            
+                            {/* Character count */}
+                            <div className="flex justify-between items-center text-xs text-gray-500">
+                                <span>{editContent.length}/2000 characters</span>
+                                {editContent.length > 2000 && (
+                                    <span className="text-red-500">Character limit exceeded</span>
+                                )}
+                            </div>
 
-                    {/* Action buttons - shown on hover */}
-                    <div className={`flex items-center space-x-1 mt-2 transition-opacity ${showActions ? 'opacity-100' : 'opacity-0'}`}>
-                        {/* Reply button */}
-                        {onReply && !comment.is_deleted && (
+                            {/* Edit error */}
+                            {editError && (
+                                <div className="text-red-600 text-xs bg-red-50 border border-red-200 rounded-md px-2 py-1">
+                                    {editError}
+                                </div>
+                            )}
+
+                            {/* Edit actions */}
+                            <div className="flex items-center space-x-2">
+                                <Button
+                                    size="sm"
+                                    onClick={handleEditSave}
+                                    disabled={isSubmitting || editContent.length > 2000 || editContent.trim().length === 0}
+                                    className="h-7 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-1" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Check size={12} className="mr-1" />
+                                            Save
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleEditCancel}
+                                    disabled={isSubmitting}
+                                    className="h-7 px-3 text-xs"
+                                >
+                                    <X size={12} className="mr-1" />
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mt-1 text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">
+                            {comment.content}
+                        </div>
+                    )}
+
+                    {/* Action buttons - shown on hover, hidden when editing */}
+                    {!isEditing && (
+                        <div className={`flex items-center space-x-1 mt-2 transition-opacity ${showActions ? 'opacity-100' : 'opacity-0'}`}>
+                            {/* Reply button */}
+                            {onReply && !comment.is_deleted && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                                    onClick={() => onReply(comment.id)}
+                                >
+                                    <MessageCircle size={12} className="mr-1" />
+                                    Reply
+                                </Button>
+                            )}
+
+                            {/* Edit button - only for comment owner */}
+                            {canEditComment && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200"
+                                    onClick={handleEditClick}
+                                >
+                                    <Edit2 size={12} className="mr-1" />
+                                    Edit
+                                </Button>
+                            )}
+
+                            {/* Delete button - only for comment owner */}
+                            {canDeleteComment && onDelete && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => onDelete(comment.id)}
+                                >
+                                    <Trash2 size={12} className="mr-1" />
+                                    Delete
+                                </Button>
+                            )}
+
+                            {/* More actions button */}
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200"
-                                onClick={() => onReply(comment.id)}
+                                className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-200"
                             >
-                                <MessageCircle size={12} className="mr-1" />
-                                Reply
+                                <MoreVertical size={12} />
                             </Button>
-                        )}
-
-                        {/* Edit button - only for comment owner */}
-                        {canEditComment && onEdit && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200"
-                                onClick={() => onEdit(comment.id)}
-                            >
-                                <Edit2 size={12} className="mr-1" />
-                                Edit
-                            </Button>
-                        )}
-
-                        {/* Delete button - only for comment owner */}
-                        {canDeleteComment && onDelete && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => onDelete(comment.id)}
-                            >
-                                <Trash2 size={12} className="mr-1" />
-                                Delete
-                            </Button>
-                        )}
-
-                        {/* More actions button */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-200"
-                        >
-                            <MoreVertical size={12} />
-                        </Button>
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

@@ -129,8 +129,29 @@ export function CommentsSection({
 
     // Handle comment edit
     const handleCommentEdit = async (commentId: string) => {
-        // TODO: Implement edit functionality in future task
+        // Edit functionality is handled inline by CommentItem
         console.log('Edit comment:', commentId);
+    };
+
+    // Handle comment update
+    const handleCommentUpdate = (updatedComment: CommentWithReplies) => {
+        setComments(prevComments => {
+            const updateCommentInTree = (comments: CommentWithReplies[]): CommentWithReplies[] => {
+                return comments.map(comment => {
+                    if (comment.id === updatedComment.id) {
+                        return { ...comment, ...updatedComment };
+                    }
+                    if (comment.replies.length > 0) {
+                        return {
+                            ...comment,
+                            replies: updateCommentInTree(comment.replies)
+                        };
+                    }
+                    return comment;
+                });
+            };
+            return updateCommentInTree(prevComments);
+        });
     };
 
     // Handle comment delete
@@ -230,6 +251,7 @@ export function CommentsSection({
                             onReply={handleReplySubmit}
                             onEdit={handleCommentEdit}
                             onDelete={handleCommentDelete}
+                            onCommentUpdated={handleCommentUpdate}
                             className="bg-white border border-gray-100 rounded-lg p-4"
                         />
                     ))}
