@@ -1,35 +1,104 @@
 "use client"
 
-import { useState, useEffect } from "react";
-import { MessageSquare, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { MessageSquare, Loader2, AlertCircle, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CommentInput } from "./comment-input";
 import { CommentThread } from "./comment-thread";
-import { getCommentsHierarchy } from "@/lib/api/comments";
-import { createClient } from "@/lib/supabase/client";
-import type { CommentWithReplies, CommentInsert } from "@/types/models";
+import { getCommentsHierarchy, createComment, updateComment, deleteComment } from "@/lib/api/comments";
+import { useRealtimeComments, applyRealtimeUpdateToComments } from "@/hooks/use-realtime-comments";
+import { useOptimisticComments } from "@/hooks/use-optimistic-comments";
+import type { CommentWithReplies, CommentInsert, CommentUpdate } from "@/types/models";
 
 interface CommentsSectionProps {
     fineId: string;
     currentUserId?: string;
+    currentUserName?: string;
+    currentUserUsername?: string;
     canEdit?: boolean;
     className?: string;
+    enableRealtime?: boolean;
 }
 
 export function CommentsSection({
     fineId,
     currentUserId,
+    currentUserName = "Unknown User",
+    currentUserUsername = "unknown",
     canEdit = false,
-    className = ""
+    className = "",
+    enableRealtime = true
 }: CommentsSectionProps) {
-    const [comments, setComments] = useState<CommentWithReplies[]>([]);
+    const [baseComments, setBaseComments] = useState<CommentWithReplies[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+    const [realtimeError, setRealtimeError] = useState<string | null>(null);
+    const scrollPositionRef = useRef<number>(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Optimistic updates hook
+    const {
+        comments,
+        setComments: setOptimisticComments,
+        addOptimisticComment,
+        updateOptimisticComment,
+        deleteOptimisticComment,
+        confirmOptimisticUpdate,
+        rejectOptimisticUpdate,
+        clearOptimisticUpdates
+    } = useOptimisticComments({
+        initialComments: baseComments,
+        onError: (error, optimisticId) => {
+            console.error('Optimistic update error:', error, optimisticId);
+        }
+    });
+
+    // Real-time subscription hook
+    const { isSubscribed } = useRealtimeComments({
+        fineId,
+        enabled: enableRealtime,
+        onCommentChange: useCallback((update) => {
+            // Preserve scroll position during real-time updates
+            if (containerRef.current) {
+                scrollPositionRef.current = containerRef.current.scrollTop;
+            }
+
+            // Apply real-time update to base comments
+            setBaseComments(prevComments => {
+                const updatedComments = applyRealtimeUpdateToComments(prevComments, update);
+                
+                // Also update optimistic comments to sync with real-time changes
+                setOptimisticComments(updatedComments);
+                
+                return updatedComments;
+            });
+
+            // Restore scroll position after update
+            setTimeout(() => {
+                if (containerRef.current) {
+                    containerRef.current.scrollTop = scrollPositionRef.current;
+                }
+            }, 0);
+        }, [setOptimisticComments]),
+        onError: useCallback((error) => {
+            setRealtimeError(error.message);
+            setIsRealtimeConnected(false);
+        }, [])
+    });
+
+    // Update realtime connection status
+    useEffect(() => {
+        setIsRealtimeConnected(isSubscribed);
+        if (isSubscribed) {
+            setRealtimeError(null);
+        }
+    }, [isSubscribed]);
 
     // Fetch comments for the fine
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async () => {
         try {
             setIsLoading(true);
             setError(null);
@@ -42,7 +111,8 @@ export function CommentsSection({
             }
 
             if (result.data) {
-                setComments(result.data.comments);
+                setBaseComments(result.data.comments);
+                setOptimisticComments(result.data.comments);
                 setTotalCount(result.data.total_count);
             }
         } catch (err) {
@@ -50,7 +120,7 @@ export function CommentsSection({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [fineId, setOptimisticComments]);
 
     // Load comments on mount and when fineId changes
     useEffect(() => {
@@ -59,106 +129,142 @@ export function CommentsSection({
         }
     }, [fineId]);
 
-    // Handle new top-level comment submission
-    const handleCommentSubmit = async (commentData: CommentInsert) => {
+    // Handle new top-level comment submission with optimistic updates
+    const handleCommentSubmit = useCallback(async (commentData: CommentInsert) => {
+        if (!currentUserId) return;
+
+        const optimisticId = `temp-${Date.now()}-${Math.random()}`;
+        const author = {
+            user_id: currentUserId,
+            username: currentUserUsername,
+            name: currentUserName
+        };
+
         setIsSubmitting(true);
+
+        // Add optimistic comment immediately
+        addOptimisticComment(commentData, optimisticId, author);
+
         try {
-            const supabase = createClient();
+            const result = await createComment(commentData);
 
-            const { data, error } = await supabase
-                .from('comments')
-                .insert(commentData)
-                .select(`
-                    id,
-                    fine_id,
-                    author_id,
-                    parent_comment_id,
-                    content,
-                    created_at,
-                    updated_at,
-                    is_deleted,
-                    author:users!comments_author_id_fkey(user_id, username, name)
-                `)
-                .single();
-
-            if (error) {
-                throw new Error(error.message);
+            if (result.error) {
+                throw new Error(result.error);
             }
 
-            // Refresh comments to get the updated hierarchy
-            await fetchComments();
-
+            // Confirm optimistic update with actual data
+            if (result.data) {
+                const commentWithAuthor = {
+                    ...result.data,
+                    author
+                };
+                confirmOptimisticUpdate(optimisticId, commentWithAuthor);
+                
+                // Update total count
+                setTotalCount(prev => prev + 1);
+            }
         } catch (err) {
             console.error('Failed to submit comment:', err);
-            // The CommentInput component will handle displaying the error
+            rejectOptimisticUpdate(optimisticId, err instanceof Error ? err.message : 'Failed to submit comment');
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [currentUserId, currentUserName, currentUserUsername, addOptimisticComment, confirmOptimisticUpdate, rejectOptimisticUpdate]);
 
-    // Handle reply submission
-    const handleReplySubmit = async (parentId: string, content: string) => {
+    // Handle reply submission with optimistic updates
+    const handleReplySubmit = useCallback(async (parentId: string, content: string) => {
         if (!currentUserId) return;
 
+        const optimisticId = `temp-reply-${Date.now()}-${Math.random()}`;
+        const author = {
+            user_id: currentUserId,
+            username: currentUserUsername,
+            name: currentUserName
+        };
+
+        const commentData: CommentInsert = {
+            content: content.trim(),
+            fine_id: fineId,
+            author_id: currentUserId,
+            parent_comment_id: parentId,
+        };
+
+        // Add optimistic reply immediately
+        addOptimisticComment(commentData, optimisticId, author);
+
         try {
-            const supabase = createClient();
+            const result = await createComment(commentData);
 
-            const commentData: CommentInsert = {
-                content: content.trim(),
-                fine_id: fineId,
-                author_id: currentUserId,
-                parent_comment_id: parentId,
-            };
-
-            const { error } = await supabase
-                .from('comments')
-                .insert(commentData);
-
-            if (error) {
-                throw new Error(error.message);
+            if (result.error) {
+                throw new Error(result.error);
             }
 
-            // Refresh comments to get the updated hierarchy
-            await fetchComments();
-
+            // Confirm optimistic update with actual data
+            if (result.data) {
+                const commentWithAuthor = {
+                    ...result.data,
+                    author
+                };
+                confirmOptimisticUpdate(optimisticId, commentWithAuthor);
+                
+                // Update total count
+                setTotalCount(prev => prev + 1);
+            }
         } catch (err) {
             console.error('Failed to submit reply:', err);
-            // TODO: Add proper error handling/notification
+            rejectOptimisticUpdate(optimisticId, err instanceof Error ? err.message : 'Failed to submit reply');
         }
-    };
+    }, [currentUserId, currentUserName, currentUserUsername, fineId, addOptimisticComment, confirmOptimisticUpdate, rejectOptimisticUpdate]);
 
     // Handle comment edit
-    const handleCommentEdit = async (commentId: string) => {
+    const handleCommentEdit = useCallback(async (commentId: string) => {
         // Edit functionality is handled inline by CommentItem
         console.log('Edit comment:', commentId);
-    };
+    }, []);
 
-    // Handle comment update
-    const handleCommentUpdate = (updatedComment: CommentWithReplies) => {
-        setComments(prevComments => {
-            const updateCommentInTree = (comments: CommentWithReplies[]): CommentWithReplies[] => {
-                return comments.map(comment => {
-                    if (comment.id === updatedComment.id) {
-                        return { ...comment, ...updatedComment };
-                    }
-                    if (comment.replies.length > 0) {
-                        return {
-                            ...comment,
-                            replies: updateCommentInTree(comment.replies)
-                        };
-                    }
-                    return comment;
-                });
-            };
-            return updateCommentInTree(prevComments);
-        });
-    };
+    // Handle comment update with optimistic updates
+    const handleCommentUpdate = useCallback(async (commentId: string, updateData: CommentUpdate) => {
+        const optimisticId = `update-${commentId}-${Date.now()}`;
 
-    // Handle comment delete
-    const handleCommentDelete = async (commentId: string) => {
-        // TODO: Implement delete functionality in future task
-        console.log('Delete comment:', commentId);
-    };
+        // Apply optimistic update immediately
+        updateOptimisticComment(commentId, updateData, optimisticId);
+
+        try {
+            const result = await updateComment(commentId, updateData);
+
+            if (result.error) {
+                throw new Error(result.error);
+            }
+
+            // Confirm optimistic update
+            confirmOptimisticUpdate(optimisticId);
+        } catch (err) {
+            console.error('Failed to update comment:', err);
+            rejectOptimisticUpdate(optimisticId, err instanceof Error ? err.message : 'Failed to update comment');
+        }
+    }, [updateOptimisticComment, confirmOptimisticUpdate, rejectOptimisticUpdate]);
+
+    // Handle comment delete with optimistic updates
+    const handleCommentDelete = useCallback(async (commentId: string) => {
+        const optimisticId = `delete-${commentId}-${Date.now()}`;
+
+        // Apply optimistic delete immediately
+        deleteOptimisticComment(commentId, optimisticId);
+
+        try {
+            const result = await deleteComment(commentId);
+
+            if (result.error) {
+                throw new Error(result.error);
+            }
+
+            // Confirm optimistic update
+            confirmOptimisticUpdate(optimisticId);
+        } catch (err) {
+            console.error('Failed to delete comment:', err);
+            rejectOptimisticUpdate(optimisticId, err instanceof Error ? err.message : 'Failed to delete comment');
+        }
+    }, [deleteOptimisticComment, confirmOptimisticUpdate, rejectOptimisticUpdate]);
 
     // Handle retry on error
     const handleRetry = () => {
@@ -200,7 +306,7 @@ export function CommentsSection({
     }
 
     return (
-        <div className={`comments-section ${className}`}>
+        <div className={`comments-section ${className}`} ref={containerRef}>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-2">
@@ -214,6 +320,28 @@ export function CommentsSection({
                         </span>
                     )}
                 </div>
+                
+                {/* Real-time connection status */}
+                {enableRealtime && (
+                    <div className="flex items-center space-x-2">
+                        {isRealtimeConnected ? (
+                            <div className="flex items-center text-green-600 text-xs">
+                                <Wifi className="h-3 w-3 mr-1" />
+                                Live
+                            </div>
+                        ) : (
+                            <div className="flex items-center text-gray-400 text-xs">
+                                <WifiOff className="h-3 w-3 mr-1" />
+                                Offline
+                            </div>
+                        )}
+                        {realtimeError && (
+                            <div className="text-red-500 text-xs" title={realtimeError}>
+                                Connection Error
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* New comment input */}
@@ -251,8 +379,18 @@ export function CommentsSection({
                             onReply={handleReplySubmit}
                             onEdit={handleCommentEdit}
                             onDelete={handleCommentDelete}
-                            onCommentUpdated={handleCommentUpdate}
-                            className="bg-white border border-gray-100 rounded-lg p-4"
+                            onCommentUpdated={(updatedComment) => {
+                                // Handle legacy comment update format
+                                if ('content' in updatedComment && 'updated_at' in updatedComment) {
+                                    handleCommentUpdate(updatedComment.id, {
+                                        content: updatedComment.content,
+                                        updated_at: updatedComment.updated_at
+                                    });
+                                }
+                            }}
+                            className={`bg-white border border-gray-100 rounded-lg p-4 ${
+                                comment.isOptimistic ? 'opacity-75' : ''
+                            } ${comment.error ? 'border-red-200 bg-red-50' : ''}`}
                         />
                     ))}
                 </div>

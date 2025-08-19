@@ -11,6 +11,7 @@ import type { SupabaseResponse } from "@/types/api";
 
 /**
  * Fetches all comments for a specific fine with author information
+ * Includes deleted comments that have replies to preserve thread structure
  * @param fineId - The ID of the fine to fetch comments for
  * @returns Promise<SupabaseResponse<CommentWithAuthor[]>>
  */
@@ -18,7 +19,8 @@ export async function getCommentsByFineId(fineId: string): Promise<SupabaseRespo
     try {
         const supabase = await createClient();
 
-        const { data, error } = await supabase
+        // First, get all non-deleted comments
+        const { data: activeComments, error: activeError } = await supabase
             .from('comments')
             .select(`
         id,
@@ -35,13 +37,49 @@ export async function getCommentsByFineId(fineId: string): Promise<SupabaseRespo
             .eq('is_deleted', false)
             .order('created_at', { ascending: true });
 
-        if (error) {
-            console.error('Error fetching comments:', error);
-            return { data: null, error: error.message };
+        if (activeError) {
+            console.error('Error fetching active comments:', activeError);
+            return { data: null, error: activeError.message };
+        }
+
+        // Get deleted comments that have replies (to preserve thread structure)
+        const { data: deletedWithReplies, error: deletedError } = await supabase
+            .from('comments')
+            .select(`
+        id,
+        fine_id,
+        author_id,
+        parent_comment_id,
+        content,
+        created_at,
+        updated_at,
+        is_deleted,
+        author:users!comments_author_id_fkey(user_id, username, name)
+      `)
+            .eq('fine_id', fineId)
+            .eq('is_deleted', true)
+            .in('id', 
+                // Subquery to find deleted comments that have replies
+                supabase
+                    .from('comments')
+                    .select('parent_comment_id')
+                    .eq('fine_id', fineId)
+                    .not('parent_comment_id', 'is', null)
+            );
+
+        // Combine active comments with deleted comments that have replies
+        const allComments = [...(activeComments || [])];
+        
+        if (deletedWithReplies && !deletedError) {
+            // Filter deleted comments to only include those that actually have replies
+            const deletedCommentsWithReplies = deletedWithReplies.filter(deletedComment => 
+                (activeComments || []).some(comment => comment.parent_comment_id === deletedComment.id)
+            );
+            allComments.push(...deletedCommentsWithReplies);
         }
 
         // Transform the data to match CommentWithAuthor type
-        const transformedData: CommentWithAuthor[] = (data || []).map(comment => ({
+        const transformedData: CommentWithAuthor[] = allComments.map(comment => ({
             id: comment.id,
             fine_id: comment.fine_id,
             author_id: comment.author_id,

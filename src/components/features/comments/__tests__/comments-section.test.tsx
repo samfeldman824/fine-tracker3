@@ -319,9 +319,11 @@ describe('CommentsSection', () => {
         fireEvent.click(screen.getAllByText('Edit')[0]);
         expect(consoleSpy).toHaveBeenCalledWith('Edit comment:', '1');
 
-        // Test delete
-        fireEvent.click(screen.getAllByText('Delete')[0]);
-        expect(consoleSpy).toHaveBeenCalledWith('Delete comment:', '1');
+        // Test delete - delete button should be clickable
+        const deleteButtons = screen.getAllByText('Delete');
+        expect(deleteButtons.length).toBeGreaterThan(0);
+        fireEvent.click(deleteButtons[0]);
+        // The delete functionality is tested in detail in comment-item-delete.test.tsx
 
         consoleSpy.mockRestore();
     });

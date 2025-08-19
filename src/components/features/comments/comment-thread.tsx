@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { CommentItem } from "./comment-item";
 import { CommentInput } from "./comment-input";
 import type { CommentWithReplies } from "@/types/models";
+import type { OptimisticCommentWithReplies } from "@/hooks/use-optimistic-comments";
 
 interface CommentThreadProps {
-    comment: CommentWithReplies;
+    comment: CommentWithReplies | OptimisticCommentWithReplies;
     depth?: number;
     maxDepth?: number;
     currentUserId?: string;
@@ -113,6 +114,17 @@ export function CommentThread({
                         });
                     }
                 }}
+                onCommentDeleted={(commentId) => {
+                    if (onCommentUpdated) {
+                        // Mark the comment as deleted in the thread
+                        onCommentUpdated({
+                            ...comment,
+                            is_deleted: true,
+                            content: ''
+                        });
+                    }
+                }}
+                hasReplies={hasReplies}
                 className={depth > 0 ? "border-l-2 border-gray-100 pl-4" : ""}
             />
 
