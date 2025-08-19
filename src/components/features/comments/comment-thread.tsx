@@ -5,6 +5,8 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CommentItem } from "./comment-item";
 import { CommentInput } from "./comment-input";
+import { CommentAvatars } from "./comment-avatars";
+import { extractThreadUsers } from "@/lib/api/comments";
 import type { CommentWithReplies } from "@/types/models";
 import type { OptimisticCommentWithReplies } from "@/hooks/use-optimistic-comments";
 
@@ -23,6 +25,52 @@ interface CommentThreadProps {
 
 const MAX_VISUAL_DEPTH = 6; // Maximum visual indentation levels
 const INDENT_SIZE = 20; // Pixels per indentation level
+
+/**
+ * Formats a timestamp to relative time (e.g., "2 hours ago", "Yesterday")
+ */
+function formatRelativeTime(timestamp: string): string {
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    // Less than a minute
+    if (diffInSeconds < 60) {
+        return "just now";
+    }
+
+    // Less than an hour
+    if (diffInSeconds < 3600) {
+        const minutes = Math.floor(diffInSeconds / 60);
+        return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+    }
+
+    // Less than a day
+    if (diffInSeconds < 86400) {
+        const hours = Math.floor(diffInSeconds / 3600);
+        return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+    }
+
+    // Less than a week
+    if (diffInSeconds < 604800) {
+        const days = Math.floor(diffInSeconds / 86400);
+        return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+    }
+
+    // More than a week - show actual date
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === yesterday.toDateString()) {
+        return "Yesterday";
+    }
+
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
+}
 
 export function CommentThread({
     comment,
@@ -76,25 +124,45 @@ export function CommentThread({
         <div className={`comment-thread ${className}`} style={indentStyle}>
             {/* Thread collapse/expand button for deeply nested comments */}
             {showCollapseToggle && (
-                <div className="flex items-center mb-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
-                        onClick={handleCollapseToggle}
-                    >
-                        {isCollapsed ? (
-                            <>
-                                <ChevronRight size={12} className="mr-1" />
-                                {comment.reply_count} {comment.reply_count === 1 ? 'reply' : 'replies'}
-                            </>
-                        ) : (
-                            <>
-                                <ChevronDown size={12} className="mr-1" />
-                                Hide replies
-                            </>
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                        {/* Participant avatars - only for threads with replies */}
+                        {comment.reply_count > 0 && (
+                            <CommentAvatars
+                                users={extractThreadUsers(comment)}
+                                maxVisible={3}
+                                size="sm"
+                                className="flex-shrink-0"
+                            />
                         )}
-                    </Button>
+                        
+                        {/* Reply count and collapse button */}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            onClick={handleCollapseToggle}
+                        >
+                            {isCollapsed ? (
+                                <>
+                                    <ChevronRight size={12} className="mr-1" />
+                                    {comment.reply_count} {comment.reply_count === 1 ? 'reply' : 'replies'}
+                                </>
+                            ) : (
+                                <>
+                                    <ChevronDown size={12} className="mr-1" />
+                                    Hide replies
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                    
+                    {/* Last reply time */}
+                    {comment.replies && comment.replies.length > 0 && (
+                        <div className="text-xs text-gray-500">
+                            Last reply {formatRelativeTime(comment.replies[comment.replies.length - 1].created_at)}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -125,6 +193,7 @@ export function CommentThread({
                     }
                 }}
                 hasReplies={hasReplies}
+                showParticipantAvatars={depth === 0 && hasReplies}
                 className={depth > 0 ? "border-l-2 border-gray-100 pl-4" : ""}
             />
 
