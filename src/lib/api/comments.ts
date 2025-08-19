@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import type {
     Comment,
     CommentInsert,
@@ -17,7 +17,7 @@ import type { SupabaseResponse } from "@/types/api";
  */
 export async function getCommentsByFineId(fineId: string): Promise<SupabaseResponse<CommentWithAuthor[]>> {
     try {
-        const supabase = await createClient();
+        const supabase = createClient();
 
         // First, get all non-deleted comments
         const { data: activeComments, error: activeError } = await supabase
@@ -42,8 +42,8 @@ export async function getCommentsByFineId(fineId: string): Promise<SupabaseRespo
             return { data: null, error: activeError.message };
         }
 
-        // Get deleted comments that have replies (to preserve thread structure)
-        const { data: deletedWithReplies, error: deletedError } = await supabase
+        // Get all deleted comments for this fine
+        const { data: deletedComments, error: deletedError } = await supabase
             .from('comments')
             .select(`
         id,
@@ -57,22 +57,14 @@ export async function getCommentsByFineId(fineId: string): Promise<SupabaseRespo
         author:users!comments_author_id_fkey(user_id, username, name)
       `)
             .eq('fine_id', fineId)
-            .eq('is_deleted', true)
-            .in('id', 
-                // Subquery to find deleted comments that have replies
-                supabase
-                    .from('comments')
-                    .select('parent_comment_id')
-                    .eq('fine_id', fineId)
-                    .not('parent_comment_id', 'is', null)
-            );
+            .eq('is_deleted', true);
 
         // Combine active comments with deleted comments that have replies
         const allComments = [...(activeComments || [])];
         
-        if (deletedWithReplies && !deletedError) {
+        if (deletedComments && !deletedError) {
             // Filter deleted comments to only include those that actually have replies
-            const deletedCommentsWithReplies = deletedWithReplies.filter(deletedComment => 
+            const deletedCommentsWithReplies = deletedComments.filter(deletedComment => 
                 (activeComments || []).some(comment => comment.parent_comment_id === deletedComment.id)
             );
             allComments.push(...deletedCommentsWithReplies);
@@ -110,7 +102,7 @@ export async function getCommentsByFineId(fineId: string): Promise<SupabaseRespo
  */
 export async function createComment(commentData: CommentInsert): Promise<SupabaseResponse<Comment>> {
     try {
-        const supabase = await createClient();
+        const supabase = createClient();
 
         const { data, error } = await supabase
             .from('comments')
@@ -141,7 +133,7 @@ export async function createComment(commentData: CommentInsert): Promise<Supabas
  */
 export async function updateComment(commentId: string, updateData: CommentUpdate): Promise<SupabaseResponse<Comment>> {
     try {
-        const supabase = await createClient();
+        const supabase = createClient();
 
         const { data, error } = await supabase
             .from('comments')
@@ -172,7 +164,7 @@ export async function updateComment(commentId: string, updateData: CommentUpdate
  */
 export async function deleteComment(commentId: string): Promise<SupabaseResponse<Comment>> {
     try {
-        const supabase = await createClient();
+        const supabase = createClient();
 
         const { data, error } = await supabase
             .from('comments')

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import React from "react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -45,7 +45,7 @@ export function DeleteCommentDialog({
                     {/* Content */}
                     <div className="mb-6">
                         <p className="text-gray-700 mb-3">
-                            Are you sure you want to delete {commentAuthor}'s comment?
+                            Are you sure you want to delete {commentAuthor}&apos;s comment?
                         </p>
                         
                         {hasReplies && (
@@ -55,7 +55,7 @@ export function DeleteCommentDialog({
                                     <div className="text-sm text-yellow-800">
                                         <p className="font-medium mb-1">This comment has replies</p>
                                         <p>
-                                            The comment will be replaced with a "deleted comment" placeholder 
+                                            The comment will be replaced with a &quot;deleted comment&quot; placeholder 
                                             to preserve the conversation thread. Replies will remain visible.
                                         </p>
                                     </div>

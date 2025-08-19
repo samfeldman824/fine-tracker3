@@ -41,13 +41,13 @@ export function useRealtimeComments({
 
     // Handle real-time comment changes
     const handleRealtimeChange = useCallback(async (
-        payload: RealtimePostgresChangesPayload<any>
+        payload: RealtimePostgresChangesPayload<{ fine_id?: string; [key: string]: unknown }>
     ) => {
         try {
             const { eventType, new: newRecord, old: oldRecord } = payload;
 
             // Only process changes for the current fine
-            const recordFineId = newRecord?.fine_id || oldRecord?.fine_id;
+            const recordFineId = (newRecord as { fine_id?: string })?.fine_id || (oldRecord as { fine_id?: string })?.fine_id;
             if (recordFineId !== fineId) {
                 return;
             }
@@ -69,15 +69,26 @@ export function useRealtimeComments({
                         return;
                     }
 
+                    const record = newRecord as {
+                        id: string;
+                        fine_id: string;
+                        author_id: string;
+                        parent_comment_id: string | null;
+                        content: string;
+                        created_at: string;
+                        updated_at: string;
+                        is_deleted: boolean;
+                    };
+
                     commentWithAuthor = {
-                        id: newRecord.id,
-                        fine_id: newRecord.fine_id,
-                        author_id: newRecord.author_id,
-                        parent_comment_id: newRecord.parent_comment_id,
-                        content: newRecord.content,
-                        created_at: newRecord.created_at,
-                        updated_at: newRecord.updated_at,
-                        is_deleted: newRecord.is_deleted,
+                        id: record.id,
+                        fine_id: record.fine_id,
+                        author_id: record.author_id,
+                        parent_comment_id: record.parent_comment_id,
+                        content: record.content,
+                        created_at: record.created_at,
+                        updated_at: record.updated_at,
+                        is_deleted: record.is_deleted,
                         author: authorData
                     };
                 }
@@ -90,17 +101,28 @@ export function useRealtimeComments({
                 const { data: authorData } = await supabaseRef.current
                     .from('users')
                     .select('user_id, username, name')
-                    .eq('user_id', oldRecord.author_id)
+                    .eq('user_id', (oldRecord as { author_id: string }).author_id)
                     .single();
 
+                const oldRecordTyped = oldRecord as {
+                    id: string;
+                    fine_id: string;
+                    author_id: string;
+                    parent_comment_id: string | null;
+                    content: string;
+                    created_at: string;
+                    updated_at: string;
+                    is_deleted: boolean;
+                };
+
                 commentWithAuthor = {
-                    id: oldRecord.id,
-                    fine_id: oldRecord.fine_id,
-                    author_id: oldRecord.author_id,
-                    parent_comment_id: oldRecord.parent_comment_id,
-                    content: oldRecord.content,
-                    created_at: oldRecord.created_at,
-                    updated_at: oldRecord.updated_at,
+                    id: oldRecordTyped.id,
+                    fine_id: oldRecordTyped.fine_id,
+                    author_id: oldRecordTyped.author_id,
+                    parent_comment_id: oldRecordTyped.parent_comment_id,
+                    content: oldRecordTyped.content,
+                    created_at: oldRecordTyped.created_at,
+                    updated_at: oldRecordTyped.updated_at,
                     is_deleted: true, // Mark as deleted for real-time handling
                     author: authorData || { user_id: '', username: 'Unknown', name: 'Unknown User' }
                 };
@@ -108,21 +130,32 @@ export function useRealtimeComments({
 
             // For UPDATE, also prepare old comment data if needed
             if (eventType === 'UPDATE' && oldRecord) {
+                const oldRecordForUpdate = oldRecord as {
+                    id: string;
+                    fine_id: string;
+                    author_id: string;
+                    parent_comment_id: string | null;
+                    content: string;
+                    created_at: string;
+                    updated_at: string;
+                    is_deleted: boolean;
+                };
+
                 const { data: oldAuthorData } = await supabaseRef.current
                     .from('users')
                     .select('user_id, username, name')
-                    .eq('user_id', oldRecord.author_id)
+                    .eq('user_id', oldRecordForUpdate.author_id)
                     .single();
 
                 oldCommentWithAuthor = {
-                    id: oldRecord.id,
-                    fine_id: oldRecord.fine_id,
-                    author_id: oldRecord.author_id,
-                    parent_comment_id: oldRecord.parent_comment_id,
-                    content: oldRecord.content,
-                    created_at: oldRecord.created_at,
-                    updated_at: oldRecord.updated_at,
-                    is_deleted: oldRecord.is_deleted,
+                    id: oldRecordForUpdate.id,
+                    fine_id: oldRecordForUpdate.fine_id,
+                    author_id: oldRecordForUpdate.author_id,
+                    parent_comment_id: oldRecordForUpdate.parent_comment_id,
+                    content: oldRecordForUpdate.content,
+                    created_at: oldRecordForUpdate.created_at,
+                    updated_at: oldRecordForUpdate.updated_at,
+                    is_deleted: oldRecordForUpdate.is_deleted,
                     author: oldAuthorData || { user_id: '', username: 'Unknown', name: 'Unknown User' }
                 };
             }

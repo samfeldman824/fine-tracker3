@@ -18,7 +18,7 @@ export interface AppError extends Error {
     statusCode?: number;
     retryable?: boolean;
     userMessage?: string;
-    context?: Record<string, any>;
+    context?: Record<string, unknown>;
 }
 
 /**
@@ -86,20 +86,23 @@ export function getUserFriendlyMessage(type: ErrorType, originalMessage: string)
 /**
  * Parses Supabase errors into standardized app errors
  */
-export function parseSupabaseError(error: any): AppError {
+export function parseSupabaseError(error: unknown): AppError {
     if (!error) {
         return createAppError('Unknown error occurred', 'unknown');
     }
 
+    // Extract error message early for reuse
+    const errorMessage = error && typeof error === 'object' && 'message' in error ? (error as { message: string }).message : '';
+
     // Handle Supabase PostgreSQL errors
-    if (error.code) {
-        switch (error.code) {
+    if (error && typeof error === 'object' && 'code' in error) {
+        switch ((error as { code: string }).code) {
             case '23505': // unique_violation
                 return createAppError(
                     'Duplicate entry',
                     'validation',
                     { 
-                        code: error.code,
+                        code: (error as { code: string }).code,
                         userMessage: 'This item already exists.'
                     }
                 );
@@ -108,7 +111,7 @@ export function parseSupabaseError(error: any): AppError {
                     'Referenced item not found',
                     'validation',
                     { 
-                        code: error.code,
+                        code: (error as { code: string }).code,
                         userMessage: 'The referenced item no longer exists.'
                     }
                 );
@@ -117,7 +120,7 @@ export function parseSupabaseError(error: any): AppError {
                     'Invalid data',
                     'validation',
                     { 
-                        code: error.code,
+                        code: (error as { code: string }).code,
                         userMessage: 'The provided data is invalid.'
                     }
                 );
@@ -126,7 +129,7 @@ export function parseSupabaseError(error: any): AppError {
                     'Item not found',
                     'not_found',
                     { 
-                        code: error.code,
+                        code: (error as { code: string }).code,
                         userMessage: 'The requested item could not be found.'
                     }
                 );
@@ -134,36 +137,36 @@ export function parseSupabaseError(error: any): AppError {
     }
 
     // Handle HTTP status codes
-    if (error.status || error.statusCode) {
-        const status = error.status || error.statusCode;
+    if (error && typeof error === 'object' && ('status' in error || 'statusCode' in error)) {
+        const status = (error as { status?: number; statusCode?: number }).status || (error as { status?: number; statusCode?: number }).statusCode;
         switch (status) {
             case 400:
                 return createAppError(
-                    error.message || 'Bad request',
+                    errorMessage || 'Bad request',
                     'validation',
                     { statusCode: status }
                 );
             case 401:
                 return createAppError(
-                    error.message || 'Unauthorized',
+                    errorMessage || 'Unauthorized',
                     'authentication',
                     { statusCode: status }
                 );
             case 403:
                 return createAppError(
-                    error.message || 'Forbidden',
+                    errorMessage || 'Forbidden',
                     'authorization',
                     { statusCode: status }
                 );
             case 404:
                 return createAppError(
-                    error.message || 'Not found',
+                    errorMessage || 'Not found',
                     'not_found',
                     { statusCode: status }
                 );
             case 429:
                 return createAppError(
-                    error.message || 'Too many requests',
+                    errorMessage || 'Too many requests',
                     'rate_limit',
                     { statusCode: status }
                 );
@@ -172,7 +175,7 @@ export function parseSupabaseError(error: any): AppError {
             case 503:
             case 504:
                 return createAppError(
-                    error.message || 'Server error',
+                    errorMessage || 'Server error',
                     'server_error',
                     { statusCode: status }
                 );
@@ -180,14 +183,14 @@ export function parseSupabaseError(error: any): AppError {
     }
 
     // Handle network errors
-    if (error.message && (
-        error.message.includes('fetch') ||
-        error.message.includes('network') ||
-        error.message.includes('connection') ||
-        error.message.includes('timeout')
+    if (errorMessage && (
+        errorMessage.includes('fetch') ||
+        errorMessage.includes('network') ||
+        errorMessage.includes('connection') ||
+        errorMessage.includes('timeout')
     )) {
         return createAppError(
-            error.message,
+            errorMessage,
             'network',
             { retryable: true }
         );
@@ -195,7 +198,7 @@ export function parseSupabaseError(error: any): AppError {
 
     // Default to unknown error
     return createAppError(
-        error.message || 'An unexpected error occurred',
+        errorMessage || 'An unexpected error occurred',
         'unknown',
         { context: { originalError: error } }
     );
@@ -247,7 +250,7 @@ export function getRecoveryStrategy(error: AppError): RecoveryStrategy {
 /**
  * Logs errors with appropriate level and context
  */
-export function logError(error: AppError, context?: Record<string, any>) {
+export function logError(error: AppError, context?: Record<string, unknown>) {
     const logData = {
         message: error.message,
         type: error.type,
@@ -275,7 +278,7 @@ export function logError(error: AppError, context?: Record<string, any>) {
  * Hook for centralized error handling
  */
 export function useErrorHandler() {
-    const handleError = (error: any, context?: Record<string, any>) => {
+    const handleError = (error: unknown, context?: Record<string, unknown>) => {
         const appError = error instanceof Error && 'type' in error 
             ? error as AppError
             : parseSupabaseError(error);

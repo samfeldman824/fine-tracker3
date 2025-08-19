@@ -10,17 +10,16 @@ import { useRealtimeComments, applyRealtimeUpdateToComments } from "@/hooks/use-
 import { useOptimisticComments } from "@/hooks/use-optimistic-comments";
 import { useApiRetry } from "@/hooks/use-retry";
 import { CommentErrorBoundary } from "./error-boundary";
-import { 
-    CommentsLoadingSkeleton, 
-    LoadingOverlay, 
-    CommentsEmptyState, 
+import {
+    CommentsLoadingSkeleton,
+    LoadingOverlay,
+    CommentsEmptyState,
     CommentsErrorState,
-    NetworkStatusIndicator 
+    NetworkStatusIndicator
 } from "./loading-states";
 import { ToastContainer, useToast } from "./error-toast";
-import { useErrorHandler, parseSupabaseError, getRecoveryStrategy } from "@/lib/error-handling";
-import type { CommentWithReplies, CommentInsert, CommentUpdate } from "@/types/models";
-import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { useErrorHandler, getRecoveryStrategy } from "@/lib/error-handling";
+import type { CommentWithReplies, CommentInsert, CommentUpdate, CommentWithAuthor } from "@/types/models";
 
 interface CommentsSectionProps {
     fineId: string;
@@ -60,12 +59,12 @@ export function CommentsSection({
     const { handleError } = useErrorHandler();
 
     // Retry mechanism for API operations
-    const { 
-        executeWithRetry, 
-        manualRetry, 
-        isRetrying, 
+    const {
+        executeWithRetry,
+        manualRetry,
+        isRetrying,
         lastError: retryError,
-        canRetry 
+        canRetry
     } = useApiRetry({
         maxAttempts: 3,
         delay: 1000,
@@ -95,7 +94,7 @@ export function CommentsSection({
     const { isSubscribed } = useRealtimeComments({
         fineId,
         enabled: enableRealtime,
-        onCommentChange: useCallback((update: RealtimePostgresChangesPayload<any>) => {
+        onCommentChange: useCallback((update: { type: 'INSERT' | 'UPDATE' | 'DELETE'; comment: CommentWithAuthor; oldComment?: CommentWithAuthor }) => {
             // Preserve scroll position during real-time updates
             if (containerRef.current) {
                 scrollPositionRef.current = containerRef.current.scrollTop;
@@ -104,10 +103,10 @@ export function CommentsSection({
             // Apply real-time update to base comments
             setBaseComments(prevComments => {
                 const updatedComments = applyRealtimeUpdateToComments(prevComments, update);
-                
+
                 // Also update optimistic comments to sync with real-time changes
                 setOptimisticComments(updatedComments);
-                
+
                 return updatedComments;
             });
 
@@ -122,7 +121,7 @@ export function CommentsSection({
             const appError = handleError(error, { context: 'realtime_connection' });
             setRealtimeError(appError.userMessage || appError.message);
             setIsRealtimeConnected(false);
-            
+
             // Show user-friendly error notification
             warning(
                 'Connection Issue',
@@ -160,7 +159,7 @@ export function CommentsSection({
         } catch (err) {
             const appError = handleError(err, { context: 'fetch_comments', fineId });
             setError(appError.userMessage || appError.message);
-            
+
             // Show error notification with recovery options
             const recovery = getRecoveryStrategy(appError);
             showError(
@@ -216,17 +215,17 @@ export function CommentsSection({
                     author
                 };
                 confirmOptimisticUpdate(optimisticId, commentWithAuthor);
-                
+
                 // Update total count
                 setTotalCount(prev => prev + 1);
-                
+
                 // Show success notification
                 success('Comment Posted', 'Your comment has been added successfully.');
             }
         } catch (err) {
             const appError = handleError(err, { context: 'create_comment', fineId });
             rejectOptimisticUpdate(optimisticId, appError.userMessage || appError.message);
-            
+
             // Show error notification with retry option
             const recovery = getRecoveryStrategy(appError);
             showError(
@@ -280,17 +279,17 @@ export function CommentsSection({
                     author
                 };
                 confirmOptimisticUpdate(optimisticId, commentWithAuthor);
-                
+
                 // Update total count
                 setTotalCount(prev => prev + 1);
-                
+
                 // Show success notification
                 success('Reply Posted', 'Your reply has been added successfully.');
             }
         } catch (err) {
             const appError = handleError(err, { context: 'create_reply', fineId, parentId });
             rejectOptimisticUpdate(optimisticId, appError.userMessage || appError.message);
-            
+
             // Show error notification
             showError(
                 'Failed to Post Reply',
@@ -329,13 +328,13 @@ export function CommentsSection({
 
             // Confirm optimistic update
             confirmOptimisticUpdate(optimisticId);
-            
+
             // Show success notification
             success('Comment Updated', 'Your comment has been updated successfully.');
         } catch (err) {
             const appError = handleError(err, { context: 'update_comment', commentId });
             rejectOptimisticUpdate(optimisticId, appError.userMessage || appError.message);
-            
+
             // Show error notification
             showError(
                 'Failed to Update Comment',
@@ -370,13 +369,13 @@ export function CommentsSection({
 
             // Confirm optimistic update
             confirmOptimisticUpdate(optimisticId);
-            
+
             // Show success notification
             success('Comment Deleted', 'Your comment has been deleted successfully.');
         } catch (err) {
             const appError = handleError(err, { context: 'delete_comment', commentId });
             rejectOptimisticUpdate(optimisticId, appError.userMessage || appError.message);
-            
+
             // Show error notification
             showError(
                 'Failed to Delete Comment',
@@ -425,25 +424,25 @@ export function CommentsSection({
         <CommentErrorBoundary>
             <div className={`comments-section relative ${className}`} ref={containerRef}>
                 {/* Toast notifications */}
-                <ToastContainer 
-                    toasts={toasts} 
+                <ToastContainer
+                    toasts={toasts}
                     onDismiss={dismissToast}
                     position="top-right"
                 />
                 {/* Loading overlay for operations */}
-                <LoadingOverlay 
+                <LoadingOverlay
                     isVisible={isRetrying || operationLoading.type !== null}
                     message={
                         isRetrying ? 'Retrying...' :
-                        operationLoading.type === 'create' ? 'Posting comment...' :
-                        operationLoading.type === 'update' ? 'Updating comment...' :
-                        operationLoading.type === 'delete' ? 'Deleting comment...' :
-                        'Loading...'
+                            operationLoading.type === 'create' ? 'Posting comment...' :
+                                operationLoading.type === 'update' ? 'Updating comment...' :
+                                    operationLoading.type === 'delete' ? 'Deleting comment...' :
+                                        'Loading...'
                     }
                 />
 
                 {/* Network status indicator */}
-                <NetworkStatusIndicator 
+                <NetworkStatusIndicator
                     isOnline={navigator.onLine}
                     className="mb-4"
                 />
@@ -461,7 +460,7 @@ export function CommentsSection({
                             </span>
                         )}
                     </div>
-                    
+
                     {/* Real-time connection status */}
                     {enableRealtime && (
                         <div className="flex items-center space-x-2">
@@ -518,15 +517,15 @@ export function CommentsSection({
                     </div>
                 )}
 
-            {/* New comment input */}
-            <div className="mb-6">
-                <CommentInput
-                    fineId={fineId}
-                    placeholder="Add a comment..."
-                    onSubmit={handleCommentSubmit}
-                    className="bg-white border border-gray-200 rounded-lg p-4"
-                />
-            </div>
+                {/* New comment input */}
+                <div className="mb-6">
+                    <CommentInput
+                        fineId={fineId}
+                        placeholder="Add a comment..."
+                        onSubmit={handleCommentSubmit}
+                        className="bg-white border border-gray-200 rounded-lg p-4"
+                    />
+                </div>
 
                 {/* Comments list */}
                 {comments.length === 0 ? (
@@ -554,11 +553,9 @@ export function CommentsSection({
                                         });
                                     }
                                 }}
-                                className={`bg-white border border-gray-100 rounded-lg p-4 relative ${
-                                    comment.isOptimistic ? 'opacity-75' : ''
-                                } ${comment.error ? 'border-red-200 bg-red-50' : ''} ${
-                                    operationLoading.commentId === comment.id ? 'pointer-events-none' : ''
-                                }`}
+                                className={`bg-white border border-gray-100 rounded-lg p-4 relative ${comment.isOptimistic ? 'opacity-75' : ''
+                                    } ${comment.error ? 'border-red-200 bg-red-50' : ''} ${operationLoading.commentId === comment.id ? 'pointer-events-none' : ''
+                                    }`}
                             />
                         ))}
                     </div>

@@ -151,7 +151,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
           schema: 'public',
           table: 'comments'
         },
-        async (payload) => {
+        async (payload: { new?: { fine_id?: string }; old?: { fine_id?: string } }) => {
           // Update comment counts when comments change
           const fineId = payload.new?.fine_id || payload.old?.fine_id;
           if (fineId) {
@@ -446,7 +446,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                         fineId={fine.id}
                         currentUserId={user?.id}
                         currentUserName={user?.name || 'Unknown User'}
-                        currentUserUsername={user?.username || 'unknown'}
+                        currentUserUsername={user?.id || 'unknown'}
                         canEdit={true}
                         enableRealtime={true}
                         className="bg-gray-50 rounded-lg p-4 border border-gray-200"

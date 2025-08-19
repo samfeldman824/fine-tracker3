@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react";
-import { Send, Loader2, AlertCircle, Wifi, WifiOff } from "lucide-react";
+import { Send, AlertCircle, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { validateCommentContent } from "@/lib/api/comments";
 import { ButtonLoadingState } from "./loading-states";
-import { useErrorHandler, parseSupabaseError } from "@/lib/error-handling";
+import { useErrorHandler } from "@/lib/error-handling";
 import type { CommentInsert } from "@/types/models";
 
 interface CommentInputProps {
@@ -135,7 +135,7 @@ export function CommentInput({
             {!isOnline && (
                 <div className="flex items-center space-x-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
                     <WifiOff className="h-4 w-4" />
-                    <span>You're offline. Your comment will be posted when you're back online.</span>
+                    <span>You&apos;re offline. Your comment will be posted when you&apos;re back online.</span>
                 </div>
             )}
             <div className="space-y-2">

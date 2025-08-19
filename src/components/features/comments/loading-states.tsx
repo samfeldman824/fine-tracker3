@@ -211,7 +211,7 @@ export function NetworkStatusIndicator({
     return (
         <div className={`flex items-center space-x-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 ${className}`}>
             <AlertCircle className="h-4 w-4" />
-            <span>You're offline. Comments may not sync until you're back online.</span>
+            <span>You&apos;re offline. Comments may not sync until you&apos;re back online.</span>
         </div>
     );
 }
