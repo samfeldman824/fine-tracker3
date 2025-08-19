@@ -1,10 +1,13 @@
 "use client"
 
 import { useState } from "react";
+import { Send, Loader2, AlertCircle, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { validateCommentContent } from "@/lib/api/comments";
-import type { CommentInsert, CommentFormData } from "@/types/models";
+import { ButtonLoadingState } from "./loading-states";
+import { useErrorHandler, parseSupabaseError } from "@/lib/error-handling";
+import type { CommentInsert } from "@/types/models";
 
 interface CommentInputProps {
     fineId: string;
@@ -45,6 +48,23 @@ export function CommentInput({
     const [content, setContent] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    
+    const { handleError } = useErrorHandler();
+
+    // Listen for online/offline events
+    useState(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,7 +110,12 @@ export function CommentInput({
             onSubmit?.(commentData);
 
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to submit comment");
+            const appError = handleError(err, { 
+                context: 'comment_input_submit', 
+                fineId, 
+                parentCommentId 
+            });
+            setError(appError.userMessage || appError.message);
         } finally {
             setIsSubmitting(false);
         }
@@ -106,6 +131,13 @@ export function CommentInput({
 
     return (
         <form onSubmit={handleSubmit} className={`space-y-3 ${className}`} role="form">
+            {/* Network status indicator */}
+            {!isOnline && (
+                <div className="flex items-center space-x-2 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                    <WifiOff className="h-4 w-4" />
+                    <span>You're offline. Your comment will be posted when you're back online.</span>
+                </div>
+            )}
             <div className="space-y-2">
                 <textarea
                     value={content}
@@ -128,8 +160,9 @@ export function CommentInput({
 
             {/* Error message */}
             {error && (
-                <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                    {error}
+                <div className="flex items-center space-x-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-md px-3 py-2">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    <span>{error}</span>
                 </div>
             )}
 
@@ -152,7 +185,13 @@ export function CommentInput({
                     className="bg-[#7d6c64] hover:bg-[#6b4a41] text-white"
                     disabled={!isValid || isSubmitting}
                 >
-                    {isSubmitting ? "Posting..." : "Post Comment"}
+                    <ButtonLoadingState
+                        isLoading={isSubmitting}
+                        loadingText="Posting..."
+                    >
+                        <Send className="h-4 w-4 mr-2" />
+                        Post Comment
+                    </ButtonLoadingState>
                 </Button>
             </div>
         </form>

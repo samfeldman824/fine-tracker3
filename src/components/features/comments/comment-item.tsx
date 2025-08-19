@@ -5,6 +5,8 @@ import { MessageCircle, MoreVertical, Edit2, Trash2, Check, X, AlertCircle } fro
 import { Button } from "@/components/ui/button";
 import { updateComment, validateCommentContent, deleteComment } from "@/lib/api/comments";
 import { DeleteCommentDialog } from "./delete-comment-dialog";
+import { ButtonLoadingState } from "./loading-states";
+import { useErrorHandler } from "@/lib/error-handling";
 import type { CommentWithAuthor } from "@/types/models";
 import type { OptimisticComment } from "@/hooks/use-optimistic-comments";
 
@@ -105,6 +107,8 @@ export function CommentItem({
     const [editError, setEditError] = useState<string | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    
+    const { handleError } = useErrorHandler();
 
     // Check if current user can edit/delete this comment
     const isOwner = currentUserId === comment.author_id;
@@ -176,7 +180,11 @@ export function CommentItem({
                 setIsEditing(false);
             }
         } catch (err) {
-            setEditError(err instanceof Error ? err.message : "Failed to update comment");
+            const appError = handleError(err, { 
+                context: 'comment_edit', 
+                commentId: comment.id 
+            });
+            setEditError(appError.userMessage || appError.message);
         } finally {
             setIsSubmitting(false);
         }
@@ -210,8 +218,12 @@ export function CommentItem({
 
             setShowDeleteDialog(false);
         } catch (err) {
-            console.error('Failed to delete comment:', err);
-            // TODO: Show error toast/notification
+            const appError = handleError(err, { 
+                context: 'comment_delete', 
+                commentId: comment.id 
+            });
+            console.error('Failed to delete comment:', appError);
+            // Error handling is managed by parent component through optimistic updates
         } finally {
             setIsDeleting(false);
         }
@@ -316,17 +328,13 @@ export function CommentItem({
                                         disabled={isSubmitting || editContent.length > 2000 || editContent.trim().length === 0}
                                         className="h-7 px-3 text-xs bg-blue-600 hover:bg-blue-700 text-white"
                                     >
-                                        {isSubmitting ? (
-                                            <>
-                                                <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin mr-1" />
-                                                Saving...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Check size={12} className="mr-1" />
-                                                Save
-                                            </>
-                                        )}
+                                        <ButtonLoadingState
+                                            isLoading={isSubmitting}
+                                            loadingText="Saving..."
+                                        >
+                                            <Check size={12} className="mr-1" />
+                                            Save
+                                        </ButtonLoadingState>
                                     </Button>
                                     <Button
                                         variant="outline"
