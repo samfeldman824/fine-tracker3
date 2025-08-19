@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, MoreVertical, Smile, Reply, Bookmark } from 'lucide-react';
+import { MessageCircle, MoreVertical, Smile, Reply, Bookmark, ChevronDown, ChevronRight } from 'lucide-react';
 import type { FineWithUsersQuery } from '@/types/api';
 import { createClient } from '@/lib/supabase/client';
+import { CommentsSection } from '@/components/features/comments';
+import { useAuth } from '@/contexts/auth-context';
 
 
 // You'll need to import this from your actual file
@@ -16,6 +18,37 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterPlayer, setFilterPlayer] = useState('');
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  const { user } = useAuth();
+
+  // Fetch comment counts for all fines
+  const fetchCommentCounts = async (fineIds: string[]) => {
+    try {
+      const supabase = createClient();
+      
+      const { data, error } = await supabase
+        .from('comments')
+        .select('fine_id')
+        .in('fine_id', fineIds)
+        .eq('is_deleted', false);
+
+      if (error) {
+        console.error('Error fetching comment counts:', error);
+        return;
+      }
+
+      // Count comments per fine
+      const counts: Record<string, number> = {};
+      data?.forEach(comment => {
+        counts[comment.fine_id] = (counts[comment.fine_id] || 0) + 1;
+      });
+
+      setCommentCounts(counts);
+    } catch (err) {
+      console.error('Failed to fetch comment counts:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchFines = async () => {
@@ -24,8 +57,8 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
         const supabase = createClient();
 
         const { data, error } = await supabase
-        .from('fines')
-        .select(`
+          .from('fines')
+          .select(`
           id,
           date,
           fine_type,
@@ -35,8 +68,8 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
           subject:users!fines_subject_id_fkey(name),
           proposer:users!fines_proposer_id_fkey(name)
         `)
-        .order('date', { ascending: false });
-        
+          .order('date', { ascending: false });
+
         const sampleData: FineWithUsersQuery[] = [
           {
             id: '1',
@@ -91,7 +124,13 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
         ];
         // setFines(sampleData);
         console.log('Fines data from database:', data);
-        setFines(data || []);
+        const finesData = data || [];
+        setFines(finesData);
+        
+        // Fetch comment counts for all fines
+        if (finesData.length > 0) {
+          await fetchCommentCounts(finesData.map(fine => fine.id));
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -100,6 +139,49 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
     };
 
     fetchFines();
+
+    // Set up real-time subscription for comments
+    const supabase = createClient();
+    const commentsChannel = supabase
+      .channel('comments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comments'
+        },
+        async (payload: { new?: { fine_id?: string }; old?: { fine_id?: string } }) => {
+          // Update comment counts when comments change
+          const fineId = payload.new?.fine_id || payload.old?.fine_id;
+          if (fineId) {
+            // Refetch comment count for the affected fine
+            try {
+              const supabase = createClient();
+              const { data, error } = await supabase
+                .from('comments')
+                .select('id')
+                .eq('fine_id', fineId)
+                .eq('is_deleted', false);
+
+              if (!error && data) {
+                setCommentCounts(prev => ({
+                  ...prev,
+                  [fineId]: data.length
+                }));
+              }
+            } catch (err) {
+              console.error('Failed to update comment count:', err);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(commentsChannel);
+    };
   }, [refreshKey]);
 
   const getTypeColor = (type: string) => {
@@ -108,7 +190,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
       case 'Fine': return 'text-red-600 bg-red-50';
       case 'Credit': return 'text-green-600 bg-green-50';
       case 'Warning': return 'text-yellow-600 bg-yellow-50';
-      default: 
+      default:
         console.log('Unknown type for color:', type);
         return 'text-gray-600 bg-gray-50';
     }
@@ -120,7 +202,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
       case 'Fine': return '💸';
       case 'Credit': return '💰';
       case 'Warning': return '⚠️';
-      default: 
+      default:
         console.log('Unknown type for emoji:', type);
         return '📝';
     }
@@ -132,10 +214,10 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
 
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
@@ -150,6 +232,27 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
     ];
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return colors[hash % colors.length];
+  };
+
+  // Toggle comment expansion for a fine
+  const toggleComments = (fineId: string) => {
+    setExpandedComments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(fineId)) {
+        newSet.delete(fineId);
+      } else {
+        newSet.add(fineId);
+      }
+      return newSet;
+    });
+  };
+
+  // Update comment count when comments change
+  const handleCommentCountChange = (fineId: string, newCount: number) => {
+    setCommentCounts(prev => ({
+      ...prev,
+      [fineId]: newCount
+    }));
   };
 
   const filteredFines = fines.filter(fine =>
@@ -178,10 +281,10 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
       });
     }
   };
@@ -236,9 +339,11 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
             {fines.map((fine) => {
               const proposerName = fine.proposer && typeof fine.proposer === 'object' && 'name' in fine.proposer ? fine.proposer.name : 'Unknown';
               const subjectName = fine.subject && typeof fine.subject === 'object' && 'name' in fine.subject ? fine.subject.name : 'Unknown';
-              
+
               return (
-                <div key={fine.id} className="group hover:bg-gray-50 -mx-4 px-4 py-1 rounded border-b border-gray-300">
+                <div key={fine.id} className={`group hover:bg-gray-50 -mx-4 px-4 py-1 rounded border-b border-gray-300 ${
+                  expandedComments.has(fine.id) ? 'bg-blue-50 border-blue-200' : ''
+                }`}>
                   <div className="flex space-x-3">
                     {/* Avatar */}
                     <div className={`w-9 h-9 rounded-lg ${getAvatarColor(proposerName)} flex items-center justify-center text-white font-semibold text-sm flex-shrink-0`}>
@@ -251,6 +356,12 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                       <div className="flex items-baseline space-x-2">
                         <span className="font-semibold text-gray-900">{proposerName}</span>
                         <span className="text-xs text-gray-500">{formatTimestamp(fine.date)}</span>
+                        {/* Comment count badge */}
+                        {(commentCounts[fine.id] || 0) > 0 && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {commentCounts[fine.id]} 💬
+                          </span>
+                        )}
                       </div>
 
                       {/* Fine Details */}
@@ -265,7 +376,7 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                           <span className="text-sm text-gray-600">→</span>
                           <span className="text-sm font-medium text-gray-900">{subjectName}</span>
                         </div> */}
-                        
+
                         <div className="text-sm text-gray-900 leading-tight">
                           {fine.amount === 0
                             ? "Fine Warning"
@@ -281,7 +392,11 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                         <button className="p-1 rounded hover:bg-gray-200 text-gray-500">
                           <Smile size={16} />
                         </button>
-                        <button className="p-1 rounded hover:bg-gray-200 text-gray-500">
+                        <button 
+                          className="p-1 rounded hover:bg-gray-200 text-gray-500"
+                          onClick={() => toggleComments(fine.id)}
+                          title="Toggle comments"
+                        >
                           <MessageCircle size={16} />
                         </button>
                         <button className="p-1 rounded hover:bg-gray-200 text-gray-500">
@@ -295,14 +410,49 @@ const FinesSlackInterface = ({ refreshKey }: FinesSlackInterfaceProps) => {
                         </button>
                       </div>
 
-                      {/* Replies indicator */}
-                      {fine.replies > 0 && (
-                        <div className="mt-1 text-xs text-blue-600 hover:underline cursor-pointer">
-                          {fine.replies} {fine.replies === 1 ? 'reply' : 'replies'}
-                        </div>
+                      {/* Comments indicator */}
+                      {(commentCounts[fine.id] || 0) > 0 && (
+                        <button
+                          onClick={() => toggleComments(fine.id)}
+                          className="mt-1 flex items-center space-x-1 text-xs text-blue-600 hover:underline cursor-pointer hover:bg-blue-50 rounded px-1 py-0.5 transition-colors"
+                        >
+                          {expandedComments.has(fine.id) ? (
+                            <ChevronDown size={12} />
+                          ) : (
+                            <ChevronRight size={12} />
+                          )}
+                          <span>
+                            {commentCounts[fine.id]} {commentCounts[fine.id] === 1 ? 'comment' : 'comments'}
+                          </span>
+                        </button>
+                      )}
+
+                      {/* Add comment button for fines without comments */}
+                      {(commentCounts[fine.id] || 0) === 0 && (
+                        <button
+                          onClick={() => toggleComments(fine.id)}
+                          className="mt-1 text-xs text-gray-500 hover:text-blue-600 hover:underline cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          Add comment
+                        </button>
                       )}
                     </div>
                   </div>
+
+                  {/* Expanded Comments Section */}
+                  {expandedComments.has(fine.id) && (
+                    <div className="mt-3 ml-12 border-l-2 border-gray-200 pl-4">
+                      <CommentsSection
+                        fineId={fine.id}
+                        currentUserId={user?.id}
+                        currentUserName={user?.name || 'Unknown User'}
+                        currentUserUsername={user?.id || 'unknown'}
+                        canEdit={true}
+                        enableRealtime={true}
+                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}

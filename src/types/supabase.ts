@@ -14,6 +14,61 @@ export type Database = {
   }
   public: {
     Tables: {
+      comments: {
+        Row: {
+          id: string
+          fine_id: string
+          author_id: string
+          parent_comment_id: string | null
+          content: string
+          created_at: string
+          updated_at: string
+          is_deleted: boolean
+        }
+        Insert: {
+          id?: string
+          fine_id: string
+          author_id: string
+          parent_comment_id?: string | null
+          content: string
+          created_at?: string
+          updated_at?: string
+          is_deleted?: boolean
+        }
+        Update: {
+          id?: string
+          fine_id?: string
+          author_id?: string
+          parent_comment_id?: string | null
+          content?: string
+          created_at?: string
+          updated_at?: string
+          is_deleted?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_fine_id_fkey"
+            columns: ["fine_id"]
+            isOneToOne: false
+            referencedRelation: "fines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fines: {
         Row: {
           amount: number
