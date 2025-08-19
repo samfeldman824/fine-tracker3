@@ -1,0 +1,37 @@
+# Dependencies - these should be installed during build, not deployed
+node_modules/
+.pnpm-store/
+
+# Build cache and artifacts
+.next/cache/
+.swc/
+.kiro/
+
+# Development files
+.vscode/
+coverage/
+*.log
+.env*
+
+# Platform-specific binaries (these are huge and not needed for deployment)
+node_modules/.pnpm/@next+swc-*
+node_modules/.pnpm/@swc/core-*
+node_modules/.pnpm/@swc/cli-*
+
+# Test files
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+
+# Documentation
+*.md
+!README.md
+
+# Lock files (not needed for deployment)
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts

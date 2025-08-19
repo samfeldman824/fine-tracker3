@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Disable SWC minification for Cloudflare Pages compatibility
+  swcMinify: false,
+  // Ensure we don't include unnecessary files in the build
+  experimental: {
+    // Disable features that might cause issues on Cloudflare Pages
+    esmExternals: false,
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Optimize client-side bundle size

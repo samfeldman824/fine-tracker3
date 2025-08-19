@@ -1,0 +1,10 @@
+[build]
+command = "pnpm build"
+output_directory = "out"
+
+[build.environment]
+NODE_VERSION = "18"
+
+# Exclude large files and directories from deployment
+[site]
+bucket = "out"
